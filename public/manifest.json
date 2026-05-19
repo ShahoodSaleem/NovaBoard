@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "FlowMarks",
+  "name": "NovaBoard",
   "version": "1.0.0",
-  "description": "A premium, customizable kanban-style bookmark manager.",
+  "description": "A premium, AI-ready kanban-style new tab bookmark manager.",
   "permissions": [
     "storage",
     "tabs",
@@ -22,12 +22,12 @@
         "default": "Ctrl+Shift+Y",
         "mac": "Command+Shift+Y"
       },
-      "description": "Quick Save to FlowMarks Inbox"
+      "description": "Quick Save to NovaBoard Inbox"
     }
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Save to FlowMarks"
+    "default_title": "Save to NovaBoard"
   },
   "chrome_url_overrides": {
     "newtab": "dashboard.html"
