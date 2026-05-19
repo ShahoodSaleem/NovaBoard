@@ -1,0 +1,46 @@
+{
+   "action": {
+      "default_icon": {
+         "128": "icons/icon-128.png",
+         "16": "icons/icon-16.png",
+         "32": "icons/icon-32.png",
+         "48": "icons/icon-48.png"
+      },
+      "default_popup": "popup.html",
+      "default_title": "Quick Save to LumiList (Ctrl/Cmd+Shift+Y)"
+   },
+   "author": "Sachin",
+   "background": {
+      "service_worker": "background.js"
+   },
+   "chrome_url_overrides": {
+      "newtab": "newtab.html"
+   },
+   "commands": {
+      "quick-save": {
+         "description": "Quick save current page to LumiList",
+         "suggested_key": {
+            "default": "Ctrl+Shift+Y",
+            "mac": "Command+Shift+Y"
+         }
+      }
+   },
+   "description": "A beautiful, drag-and-drop bookmark manager that replaces your new tab page",
+   "host_permissions": [ "https://xbccmcszhnybxzlirjgk.supabase.co/*", "http://*/*", "https://*/*" ],
+   "icons": {
+      "128": "icons/icon-128.png",
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAryc3fZsErsJMfMbuybvQ2w+UNqdl8JcrsEw6Qn+RfjO101m4tqAO0fyiWfvet6UzhfVllrVNkng/9ucUdPal77W40+5vPZKJPh7dBi+cC7uSYECVXnUvpPitJAm4VmtX+ZDZC5ql+N9kRBr2hZkysjsFaUrI3apLzCEEVe8AvFkV7eGNWXPAGUVKok6SrEwzyzM282Y/WiInbg/fRhcOgv2+J5CKJVFEo+FKXB4+OYLt4m6fLpCpcrauxZz1c0ozPOArRDp597KCtTz81TbAcMaA6brTLC4ozccmliN14RpFdQ0EjYrf5R02LYnnhnOjmENgxeeGsDH3wMrlD1dazwIDAQAB",
+   "manifest_version": 3,
+   "name": "LumiList - Smart Bookmark Manager",
+   "permissions": [ "bookmarks", "storage", "tabs", "activeTab", "notifications", "favicon", "scripting", "identity", "alarms", "contextMenus" ],
+   "update_url": "https://clients2.google.com/service/update2/crx",
+   "version": "1.7.3",
+   "web_accessible_resources": [ {
+      "matches": [ "https://lumilist.in/*", "https://www.lumilist.in/*" ],
+      "resources": [ "newtab.html" ]
+   } ]
+}

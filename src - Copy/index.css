@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #050505;
+  --color-accent: #3b82f6;
+}
+
+@utility glass {
+  background-color: rgb(255 255 255 / 0.05);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+@utility glass-group {
+  background-color: rgba(9, 9, 11, 0.4);
+  backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 36px -12px rgba(0, 0, 0, 0.5);
+}
+
+@utility separator-line {
+  @apply w-full h-[0.5px] bg-white/10 my-4;
+}
+
+@utility add-board-placeholder {
+  @apply w-full h-24 border-2 border-dashed border-amber-500/40 rounded-2xl flex items-center justify-center cursor-pointer transition-all gap-3;
+  color: rgba(245, 158, 11, 0.6);
+  
+  &:hover {
+    border-color: rgba(245, 158, 11, 0.8);
+    background-color: rgba(245, 158, 11, 0.05);
+    color: rgba(245, 158, 11, 1);
+    transform: translateY(-2px);
+  }
+}
+
+@utility bookmark-item {
+  @apply flex items-center gap-3 p-2 rounded-lg transition-all border border-transparent;
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-background text-white antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.08);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 0.15);
+}

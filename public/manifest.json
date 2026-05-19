@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "FlowMarks",
+  "version": "1.0.0",
+  "description": "A premium, customizable kanban-style bookmark manager.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "unlimitedStorage",
+    "bookmarks",
+    "favicon",
+    "scripting"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "commands": {
+    "quick-save": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      },
+      "description": "Quick Save to FlowMarks Inbox"
+    }
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Save to FlowMarks"
+  },
+  "chrome_url_overrides": {
+    "newtab": "dashboard.html"
+  },
+  "icons": {
+    "16": "assets/logo.gif",
+    "48": "assets/logo.gif",
+    "128": "assets/logo.gif"
+  }
+}
