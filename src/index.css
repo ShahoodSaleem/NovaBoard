@@ -26,7 +26,7 @@
 @utility add-board-placeholder {
   @apply w-full h-24 border-2 border-dashed border-amber-500/40 rounded-2xl flex items-center justify-center cursor-pointer transition-all gap-3;
   color: rgba(245, 158, 11, 0.6);
-  
+
   &:hover {
     border-color: rgba(245, 158, 11, 0.8);
     background-color: rgba(245, 158, 11, 0.05);
@@ -37,7 +37,7 @@
 
 @utility bookmark-item {
   @apply flex items-center gap-3 p-2 rounded-lg transition-all border border-transparent;
-  
+
   &:hover {
     background-color: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.05);
@@ -68,4 +68,1775 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(255 255 255 / 0.15);
+}
+
+/* ════════════════════════════════════════
+   WIDGET GALLERY BUTTON
+   ════════════════════════════════════════ */
+.widget-gallery-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #d1d5db;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.widget-gallery-btn:hover,
+.widget-gallery-btn.gallery-btn-active {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.gallery-btn-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--accent-color, #ef4444);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* ════════════════════════════════════════
+   WIDGET GALLERY PANEL
+   ════════════════════════════════════════ */
+.gallery-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.2s ease;
+}
+
+.widget-gallery {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 340px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  background: rgba(10, 10, 18, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5);
+}
+
+.widget-gallery.gallery-open {
+  transform: translateX(0);
+}
+
+/* Gallery Header */
+.gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.gallery-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gallery-header-icon {
+  width: 20px;
+  height: 20px;
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.gallery-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 2px;
+  letter-spacing: 0.01em;
+}
+
+.gallery-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0;
+}
+
+.gallery-close-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  border-radius: 7px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.gallery-close-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.gallery-close-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+/* Active bar */
+.gallery-active-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.gallery-active-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-color, #ef4444);
+  background: rgba(239, 68, 68, 0.12);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.gallery-active-hint {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Gallery list */
+.gallery-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Gallery card */
+.gallery-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  transition: all 0.25s ease;
+}
+
+.gallery-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.gallery-card.gallery-card-active {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+/* Preview icon */
+.gallery-preview {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.gallery-preview-svg {
+  width: 40px;
+  height: 40px;
+}
+
+.gallery-active-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+/* Card info */
+.gallery-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.gallery-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 2px;
+}
+
+.gallery-card-desc {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.4;
+}
+
+.gallery-card-status {
+  font-size: 10px;
+  color: #10b981;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* Action button */
+.gallery-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  letter-spacing: 0.02em;
+}
+
+.gallery-action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.gallery-action-btn.btn-add {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.gallery-action-btn.btn-add:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.gallery-action-btn.btn-remove {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.gallery-action-btn.btn-remove:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* Footer */
+.gallery-footer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 14px 20px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.gallery-footer-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ════════════════════════════════════════
+   WIDGETS LAYER
+   ════════════════════════════════════════ */
+.widgets-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* ════════════════════════════════════════
+   WIDGET CONTAINER
+   ════════════════════════════════════════ */
+.widget-container {
+  position: absolute;
+  pointer-events: auto;
+  background:
+    radial-gradient(at 0% 0%, rgba(255, 255, 255, 0.07) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(255, 255, 255, 0.04) 0px, transparent 50%),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    rgba(0, 0, 0, 0.42) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+  user-select: none;
+}
+
+.widget-container:hover {
+  background: rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+
+.widget-container-clock,
+.widget-container-tasks {
+  background:
+    radial-gradient(at 0% 0%, rgba(255, 255, 255, 0.07) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(255, 255, 255, 0.04) 0px, transparent 50%),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    rgba(0, 0, 0, 0.42) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  /* background:
+    radial-gradient(at 0% 0%, rgba(255, 255, 255, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(255, 255, 255, 0.03) 0px, transparent 50%),
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    rgba(0, 0, 0, 0.38) !important;
+  background-size: 100% 100%, 100% 100%, 14px 14px, 14px 14px !important;
+  backdrop-filter: blur(28px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.15) !important; */
+}
+
+.widget-container-clock,
+.widget-container-tasks {
+  background:
+    radial-gradient(at 0% 0%, rgba(255, 255, 255, 0.07) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(255, 255, 255, 0.04) 0px, transparent 50%),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    rgba(0, 0, 0, 0.42) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+
+/* Minimalist Header */
+.wc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 8px;
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.wc-header:active {
+  cursor: grabbing;
+}
+
+.wc-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color 0.2s ease;
+}
+
+.widget-container:hover .wc-title {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.wc-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.wc-btn {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wc-btn svg {
+  width: 10px;
+  height: 10px;
+}
+
+.wc-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.wc-btn.close:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.wc-body {
+  padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Resize handle */
+.wc-resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  cursor: se-resize;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0 2px 2px 0;
+  color: rgba(255, 255, 255, 0.25);
+  z-index: 10;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.wc-resize-handle:hover {
+  color: rgba(255, 255, 255, 0.65);
+  transform: scale(1.1);
+}
+
+.wc-resize-svg {
+  pointer-events: none;
+}
+
+/* ════════════════════════════════════════
+   CLOCK WIDGET
+   ════════════════════════════════════════ */
+.clock-widget {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px 18px;
+  flex: 1;
+  height: 100%;
+}
+
+.clock-analog {
+  flex-shrink: 0;
+}
+
+.clock-svg {
+  width: 80px;
+  height: 80px;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.08));
+}
+
+.clock-digital {
+  flex: 1;
+}
+
+.clock-time-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  line-height: 1;
+}
+
+.clock-hm {
+  font-size: 2.8rem;
+  font-weight: 200;
+  color: white;
+  letter-spacing: -2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-sec {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--accent-color, #ef4444);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+  align-self: flex-end;
+  padding-bottom: 5px;
+}
+
+.clock-date-row {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 6px;
+  letter-spacing: 0.02em;
+}
+
+/* ════════════════════════════════════════
+   TASK WIDGET
+   ════════════════════════════════════════ */
+.task-widget {
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  gap: 10px;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Stats */
+.task-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.task-stat-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.task-stat-done {
+  font-size: 16px;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.task-stat-sep,
+.task-stat-total,
+.task-stat-label {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.task-stat-pct {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Progress bar */
+.task-progress-track {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.task-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #34d399);
+  border-radius: 99px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Input */
+.task-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.task-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: white;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.task-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.task-input:focus {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.task-add-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-color, #ef4444);
+  border: none;
+  border-radius: 9px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.task-add-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.task-add-btn:hover:not(:disabled) {
+  background: #dc2626;
+  transform: scale(1.05);
+}
+
+.task-add-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* List */
+.task-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.task-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+  color: rgba(255, 255, 255, 0.25);
+  text-align: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.task-empty-icon {
+  width: 28px;
+  height: 28px;
+  opacity: 0.4;
+}
+
+.task-empty-sub {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* Task item */
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 9px;
+  transition: all 0.2s;
+}
+
+.task-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.task-item.task-done {
+  opacity: 0.5;
+}
+
+.task-checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.task-checkbox svg {
+  width: 10px;
+  height: 10px;
+}
+
+.task-checkbox.checked {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+.task-checkbox:hover:not(.checked) {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.task-text {
+  flex: 1;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.task-done .task-text {
+  text-decoration: line-through;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.task-delete-btn {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 4px;
+  padding: 0;
+  transition: all 0.15s;
+  opacity: 0;
+}
+
+.task-delete-btn svg {
+  width: 11px;
+  height: 11px;
+}
+
+.task-item:hover .task-delete-btn {
+  opacity: 1;
+}
+
+.task-delete-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Clear button */
+.task-clear-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.task-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* ════════════════════════════════════════
+   MUSIC WIDGET
+   ════════════════════════════════════════ */
+.music-connect-screen,
+.music-player-screen,
+.music-no-track {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  gap: 10px;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Connect screen */
+.music-brand-icon svg {
+  width: 48px;
+  height: 48px;
+  filter: drop-shadow(0 0 12px rgba(29, 185, 84, 0.4));
+}
+
+.music-connect-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.music-connect-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.music-client-id-row {
+  display: flex;
+  width: 100%;
+  gap: 6px;
+}
+
+.music-client-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  padding: 7px 11px;
+  font-size: 11px;
+  color: white;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.music-client-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.music-client-input:focus {
+  border-color: #1DB954;
+}
+
+.music-save-btn {
+  padding: 7px 12px;
+  background: rgba(29, 185, 84, 0.15);
+  border: 1px solid rgba(29, 185, 84, 0.3);
+  color: #1DB954;
+  border-radius: 9px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.music-save-btn:hover {
+  background: rgba(29, 185, 84, 0.25);
+}
+
+.music-connect-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.music-btn-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.spotify-btn {
+  background: #1DB954;
+  color: white;
+  border-color: #1DB954;
+}
+
+.spotify-btn:hover:not(:disabled) {
+  background: #1ed760;
+  transform: scale(1.02);
+}
+
+.spotify-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.youtube-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.youtube-btn:hover {
+  background: rgba(255, 0, 0, 0.1);
+  border-color: rgba(255, 0, 0, 0.3);
+  color: #ff4444;
+}
+
+.music-error {
+  font-size: 10px;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 7px;
+  padding: 6px 10px;
+  text-align: center;
+  width: 100%;
+  margin: 0;
+}
+
+.music-help-link {
+  font-size: 10px;
+  margin: 0;
+}
+
+.music-help-link a {
+  color: rgba(255, 255, 255, 0.3);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.music-help-link a:hover {
+  color: #1DB954;
+}
+
+.music-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* Player screen */
+.music-player-screen {
+  padding: 10px 12px;
+  gap: 8px;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+.music-track-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.music-album-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.music-album-art {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.music-album-placeholder {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.music-album-placeholder svg {
+  width: 24px;
+  height: 24px;
+}
+
+.music-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.music-track-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0 0 1px;
+}
+
+.music-artist-name {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0 0 4px;
+}
+
+.music-spotify-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.music-spotify-logo {
+  width: 12px;
+  height: 12px;
+}
+
+/* Progress */
+.music-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.music-time {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.4);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.music-progress-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+  position: relative;
+}
+
+.music-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1DB954, #1ed760);
+  border-radius: 99px;
+  transition: width 0.5s linear;
+}
+
+.music-progress-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
+  transition: left 0.5s linear;
+}
+
+/* Bottom Row & Controls */
+.music-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.music-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.music-ctrl {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.music-ctrl svg {
+  width: 14px;
+  height: 14px;
+}
+
+.music-ctrl:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  transform: scale(1.06);
+}
+
+.music-ctrl.play-btn {
+  width: 38px;
+  height: 38px;
+  background: #1DB954;
+  border-color: #1DB954;
+  color: white;
+  box-shadow: 0 4px 12px rgba(29, 185, 84, 0.3);
+}
+
+.music-ctrl.play-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.music-ctrl.play-btn:hover {
+  background: #1ed760;
+  transform: scale(1.08);
+}
+
+/* Volume Control */
+.music-volume-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: flex-end;
+  max-width: 100px;
+}
+
+.music-volume-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.music-volume-btn:hover {
+  color: white;
+  transform: scale(1.08);
+}
+
+.music-volume-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.music-volume-slider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 99px;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.music-volume-slider:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.music-volume-slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+}
+
+.music-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 10px;
+  width: 10px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  margin-top: -3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s;
+}
+
+.music-volume-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  background: #1DB954;
+}
+
+/* Disconnect */
+.music-disconnect-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, transform 0.2s;
+  border-radius: 50%;
+}
+
+.music-disconnect-btn:hover {
+  color: #ff4d4d;
+  background: rgba(255, 77, 77, 0.08);
+  transform: scale(1.08);
+}
+
+.music-disconnect-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* No track */
+.music-no-track {
+  gap: 8px;
+}
+
+.music-no-track-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+.music-no-track-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  margin: 0;
+}
+
+/* Equalizer bars */
+.eq-bars {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+  padding: 0 3px;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 5px;
+}
+
+.eq-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: #1DB954;
+  height: 4px;
+  transition: height 0.1s;
+}
+
+.eq-playing .eq-bar-1 {
+  animation: eq1 0.7s ease-in-out infinite alternate;
+}
+
+.eq-playing .eq-bar-2 {
+  animation: eq2 0.5s ease-in-out infinite alternate;
+}
+
+.eq-playing .eq-bar-3 {
+  animation: eq3 0.8s ease-in-out infinite alternate;
+}
+
+.eq-playing .eq-bar-4 {
+  animation: eq4 0.6s ease-in-out infinite alternate;
+}
+
+/* Redesigned Premium Horizontal Music Widget */
+.music-player-screen-new {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  background: rgba(10, 15, 12, 0.45);
+}
+
+.music-bg-blur {
+  position: absolute;
+  inset: -30px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(28px) saturate(180%);
+  transform: scale(1.1);
+  opacity: 0.55;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.music-layout-columns {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+  gap: 16px;
+  align-items: center;
+  background: linear-gradient(160deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.65) 100%);
+}
+
+.music-left-col {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  min-width: 130px;
+  min-height: 130px;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6), 0 0 1px rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.music-cover-art-new {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.music-cover-placeholder-new {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.music-cover-placeholder-new svg {
+  width: 48px;
+  height: 48px;
+}
+
+.music-right-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+  min-width: 0;
+  /* Ensures text truncates correctly */
+}
+
+/* Meta block */
+.music-meta-container {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 2px;
+  gap: 8px;
+}
+
+.music-brand-and-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.music-apple-logo {
+  width: 14px;
+  height: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.music-meta-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.music-track-title-new {
+  font-size: 15px;
+  font-weight: 700;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.music-artist-name-new {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.music-power-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.music-power-btn:hover {
+  color: #ff4d4d;
+  background: rgba(255, 77, 77, 0.12);
+  transform: scale(1.1);
+}
+
+.music-power-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Progress bar row */
+.music-progress-row-new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.music-time-new {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.music-progress-bar-container {
+  flex: 1;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  cursor: default;
+}
+
+.music-progress-bar-track-new {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 99px;
+  overflow: hidden;
+  position: relative;
+}
+
+.music-progress-bar-fill-new {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 99px;
+  transition: width 0.3s linear;
+}
+
+/* Playback controls row */
+.music-controls-row-new {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+
+.music-playback-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 32px;
+  padding-left: 20px;
+  /* Center alignment offset */
+}
+
+.music-btn-raw {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+}
+
+.music-btn-raw:hover {
+  color: white;
+  transform: scale(1.12);
+}
+
+.music-btn-raw:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+.music-btn-raw svg {
+  width: 22px;
+  height: 22px;
+}
+
+.music-btn-raw.play-pause-new svg {
+  width: 32px;
+  height: 32px;
+}
+
+.music-cast-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.music-cast-btn:hover {
+  color: white;
+  transform: scale(1.1);
+}
+
+.music-cast-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Volume row */
+.music-volume-row-new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding-bottom: 2px;
+  box-sizing: border-box;
+}
+
+.music-vol-icon-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.music-vol-icon-btn:hover {
+  color: white;
+  transform: scale(1.1);
+}
+
+.music-vol-icon-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+.music-vol-icon-btn.louder svg {
+  width: 15px;
+  height: 15px;
+}
+
+.music-volume-slider-new {
+  flex: 1;
+  height: 5px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 99px;
+  outline: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.music-volume-slider-new:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.music-volume-slider-new::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 5px;
+  cursor: pointer;
+}
+
+.music-volume-slider-new::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 10px;
+  width: 10px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  margin-top: -2.5px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s, background-color 0.15s;
+}
+
+.music-volume-slider-new::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+  background: #1DB954;
+}
+
+/* No track screen redesign */
+.music-no-track-new {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 15, 12, 0.5);
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.music-no-track-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.music-no-track-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.music-no-track-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0;
+}
+
+.music-disconnect-btn-new {
+  margin-top: 8px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.music-disconnect-btn-new:hover {
+  background: rgba(255, 77, 77, 0.12);
+  border-color: rgba(255, 77, 77, 0.3);
+  color: #ff4d4d;
+}
+
+/* ════════════════════════════════════════
+   KEYFRAMES
+   ════════════════════════════════════════ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes eq1 {
+  from {
+    height: 3px;
+  }
+
+  to {
+    height: 12px;
+  }
+}
+
+@keyframes eq2 {
+  from {
+    height: 6px;
+  }
+
+  to {
+    height: 10px;
+  }
+}
+
+@keyframes eq3 {
+  from {
+    height: 4px;
+  }
+
+  to {
+    height: 14px;
+  }
+}
+
+@keyframes eq4 {
+  from {
+    height: 8px;
+  }
+
+  to {
+    height: 6px;
+  }
 }

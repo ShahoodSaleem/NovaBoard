@@ -26,6 +26,8 @@ import { AddBookmarkToGroupModal } from '../components/bookmark/AddBookmarkToGro
 import { UtilityRail } from '../components/ui/UtilityRail'
 import { AppearanceModal } from '../components/ui/AppearanceModal'
 import { ImportExportModal } from '../components/dashboard/ImportExportModal'
+import { WidgetsLayer } from '../components/widgets/WidgetsLayer'
+import { WidgetGallery } from '../components/widgets/WidgetGallery'
 import { Plus, X } from 'lucide-react'
 
 // Groups flat columns array into vertical lanes by laneId
@@ -158,8 +160,16 @@ function DashboardApp() {
     sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } }),
   };
 
+  const accentColor = activeWorkspace?.theme?.accentColor || '#ef4444';
+
   return (
-    <div className="relative min-h-screen text-white overflow-hidden" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div 
+      className="relative min-h-screen text-white overflow-hidden" 
+      style={{ 
+        fontFamily: "'Inter', system-ui, sans-serif",
+        '--accent-color': accentColor
+      }}
+    >
       {/* Background */}
       {wallpaperType?.startsWith('video/') ? (
         <video
@@ -327,6 +337,9 @@ function DashboardApp() {
         onOpenAppearance={() => setIsAppearanceOpen(true)} 
         onOpenBackup={() => setIsBackupOpen(true)} 
       />
+
+      <WidgetsLayer />
+      <WidgetGallery />
 
       <AddWorkspaceModal />
       <SearchOverlay />

@@ -6,9 +6,11 @@ import {
   Settings2, 
   Download,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  LayoutGrid
 } from 'lucide-react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+import { useWidgetStore } from '../../store/useWidgetStore';
 import { BackupButton } from './BackupButton';
 
 export function UtilityRail({ onOpenAppearance, onOpenBackup }) {
@@ -21,6 +23,12 @@ export function UtilityRail({ onOpenAppearance, onOpenBackup }) {
     importChromeBookmarks,
     activeWorkspaceId
   } = useWorkspaceStore();
+
+  const {
+    toggleGallery,
+    isGalleryOpen,
+    activeWidgets
+  } = useWidgetStore();
 
   const handleImport = async () => {
     importChromeBookmarks(activeWorkspaceId);
@@ -88,6 +96,22 @@ export function UtilityRail({ onOpenAppearance, onOpenBackup }) {
             className="p-3 rounded-xl text-white/40 hover:text-white hover:bg-emerald-500/20 hover:text-emerald-400 transition-all active:rotate-180 duration-500"
           >
             <Settings2 size={20} />
+          </button>
+
+          {/* Widget Gallery Toggle */}
+          <button
+            onClick={toggleGallery}
+            title="Widget Gallery"
+            className={`p-3 rounded-xl transition-all duration-300 relative group active:scale-95 ${
+              isGalleryOpen 
+                ? 'bg-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.4)]' 
+                : 'text-white/40 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <LayoutGrid size={20} />
+            <span className="absolute -left-28 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-amber-500 text-[10px] font-bold text-black uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Widgets ({activeWidgets.length})
+            </span>
           </button>
 
           <div className="h-px bg-white/5 mx-2" />
