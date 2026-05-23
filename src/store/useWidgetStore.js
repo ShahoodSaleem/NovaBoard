@@ -54,18 +54,27 @@ export const useWidgetStore = create((set, get) => ({
   tasks: [],
   isGalleryOpen: false,
   spotifyClientId: '',
+  isWidgetsLocked: false,
 
   loadWidgets: async () => {
-    const [widgets, tasks, clientId] = await Promise.all([
+    const [widgets, tasks, clientId, isLocked] = await Promise.all([
       getLocal(WIDGET_KEY),
       getLocal(TASKS_KEY),
       getLocal(SPOTIFY_CLIENT_KEY),
+      getLocal('flowmarks_widgets_locked'),
     ]);
     set({
       activeWidgets: widgets || [],
       tasks: tasks || [],
       spotifyClientId: clientId || '',
+      isWidgetsLocked: !!isLocked,
     });
+  },
+
+  toggleWidgetsLock: async () => {
+    const next = !get().isWidgetsLocked;
+    await setLocal('flowmarks_widgets_locked', next);
+    set({ isWidgetsLocked: next });
   },
 
   addWidget: async (type) => {
@@ -141,6 +150,13 @@ export const useWidgetStore = create((set, get) => ({
   deleteTask: async (taskId) => {
     const { tasks } = get();
     const updated = tasks.filter((t) => t.id !== taskId);
+    await setLocal(TASKS_KEY, updated);
+    set({ tasks: updated });
+  },
+
+  editTask: async (taskId, newText) => {
+    const { tasks } = get();
+    const updated = tasks.map((t) => (t.id === taskId ? { ...t, text: newText } : t));
     await setLocal(TASKS_KEY, updated);
     set({ tasks: updated });
   },

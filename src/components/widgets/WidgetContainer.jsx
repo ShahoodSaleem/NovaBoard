@@ -149,7 +149,7 @@ export const WidgetContainer = ({ widget, children }) => {
       {!widget.minimized && (
         <>
           <div className="wc-body">
-            {children}
+            {React.isValidElement(children) ? React.cloneElement(children, { size }) : children}
           </div>
           {/* Resize handle */}
           <div className="wc-resize-handle" onMouseDown={onResizeMouseDown}>

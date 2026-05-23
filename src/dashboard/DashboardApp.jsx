@@ -15,8 +15,6 @@ import {
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useWorkspaceStore } from '../store/useWorkspaceStore'
-import WallpaperButton from '../components/ui/WallpaperButton'
-import SearchButton from '../components/ui/SearchButton'
 import SearchOverlay from '../components/ui/SearchOverlay'
 import AddWorkspaceModal from '../components/workspace/AddWorkspaceModal'
 import { SortableColumn } from '../components/board/SortableColumn'
@@ -327,11 +325,7 @@ function DashboardApp() {
         </div>
       </div>
 
-      {/* Floating bottom-left */}
-      <div className="fixed bottom-8 left-8 z-[100] flex items-center gap-3">
-        <WallpaperButton />
-        <SearchButton />
-      </div>
+
 
       <UtilityRail 
         onOpenAppearance={() => setIsAppearanceOpen(true)} 

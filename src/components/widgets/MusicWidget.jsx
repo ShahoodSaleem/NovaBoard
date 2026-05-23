@@ -228,13 +228,41 @@ const PlayerScreen = ({
 };
 
 /* ── No track screen ── */
-const NoTrackScreen = ({ onDisconnect }) => (
+const NoTrackScreen = ({ onDisconnect, onLaunch }) => (
   <div className="music-no-track-new">
     <div className="music-no-track-content">
       <Equalizer playing={false} />
       <p className="music-no-track-title">Nothing playing</p>
       <p className="music-no-track-sub">Open Spotify and start a song</p>
-      <button className="music-disconnect-btn-new" onClick={onDisconnect}>Disconnect Spotify</button>
+      
+      <button 
+        className="music-launch-btn spotify-btn" 
+        onClick={onLaunch}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          padding: '8px 16px',
+          background: '#1DB954',
+          color: 'white',
+          border: 'none',
+          borderRadius: '20px',
+          fontSize: '12px',
+          fontWeight: '600',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          boxShadow: '0 4px 12px rgba(29, 185, 84, 0.3)',
+          marginTop: '6px'
+        }}
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '15px', height: '15px' }}>
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.65 14.46c-.2.32-.63.42-.95.21-2.6-1.59-5.87-1.95-9.73-1.07-.37.09-.74-.14-.83-.51-.09-.37.14-.74.51-.83 4.22-.96 7.84-.55 10.77 1.24.32.2.42.63.21.95zm1.27-2.83c-.24.4-.77.52-1.17.28-2.98-1.83-7.51-2.36-11.03-1.29-.45.14-.93-.12-1.07-.57-.14-.45.12-.93.57-1.07 4.02-1.22 9.01-.63 12.42 1.47.4.24.52.77.28 1.17zm.11-2.95C14.71 8.63 9.36 8.46 6.29 9.4c-.55.17-1.13-.14-1.29-.69-.17-.55.14-1.13.69-1.29 3.57-1.08 9.5-.87 13.25 1.44.5.3.66.95.37 1.44-.3.5-.95.66-1.44.37z"/>
+        </svg>
+        Launch Spotify
+      </button>
+
+      <button className="music-disconnect-btn-new" onClick={onDisconnect} style={{ marginTop: '10px' }}>Disconnect Spotify</button>
     </div>
   </div>
 );
@@ -263,6 +291,14 @@ export const MusicWidget = () => {
     clearInterval(progressRef.current);
   };
 
+  const handleLaunchSpotify = () => {
+    if (typeof chrome !== 'undefined' && chrome.tabs) {
+      chrome.tabs.create({ url: 'https://open.spotify.com', active: true });
+    } else {
+      window.open('https://open.spotify.com', '_blank');
+    }
+  };
+
   const fetchPlayer = useCallback(async () => {
     try {
       const data = await spotifyService.getCurrentlyPlaying();
@@ -274,6 +310,17 @@ export const MusicWidget = () => {
         if (data.device && typeof data.device.volume_percent === 'number') {
           setVolumeState(data.device.volume_percent);
         }
+      } else {
+        // Nothing active. Check if we should auto-launch this session.
+        if (!sessionStorage.getItem('spotify_launched_this_session')) {
+          sessionStorage.setItem('spotify_launched_this_session', 'true');
+          if (typeof chrome !== 'undefined' && chrome.tabs) {
+            chrome.tabs.create({ url: 'https://open.spotify.com', active: false }); // Background launch
+          } else {
+            window.open('https://open.spotify.com', '_blank');
+          }
+        }
+        setTrack(null);
       }
     } catch (e) {
       if (e.message === 'Not authenticated') {
@@ -371,7 +418,7 @@ export const MusicWidget = () => {
     );
   }
 
-  if (!track) return <NoTrackScreen onDisconnect={handleDisconnect} />;
+  if (!track) return <NoTrackScreen onDisconnect={handleDisconnect} onLaunch={handleLaunchSpotify} />;
 
   return (
     <PlayerScreen

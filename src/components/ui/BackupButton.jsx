@@ -21,7 +21,7 @@ export const BackupButton = ({ onClick }) => {
           d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" 
         />
       </svg>
-      <span className="absolute -left-28 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-amber-500 text-[10px] font-bold text-black uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+      <span className="absolute bottom-14 left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-amber-500 text-[10px] font-bold text-black uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
         Layout Backup
       </span>
     </button>

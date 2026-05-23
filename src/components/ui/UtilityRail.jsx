@@ -5,16 +5,17 @@ import {
   Ghost, 
   Settings2, 
   Download,
-  ChevronRight,
-  ChevronLeft,
-  LayoutGrid
+  LayoutGrid,
+  Sliders
 } from 'lucide-react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { useWidgetStore } from '../../store/useWidgetStore';
 import { BackupButton } from './BackupButton';
+import SearchButton from './SearchButton';
+import WallpaperButton from './WallpaperButton';
 
 export function UtilityRail({ onOpenAppearance, onOpenBackup }) {
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [isCollapsed, setIsCollapsed] = React.useState(true);
   const { 
     isPrivacyMode, 
     togglePrivacyMode, 
@@ -35,97 +36,122 @@ export function UtilityRail({ onOpenAppearance, onOpenBackup }) {
   };
 
   return (
-    <div className="fixed right-6 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-4 p-2 rounded-2xl bg-black/20 backdrop-blur-3xl border border-white/10 shadow-2xl group transition-all duration-300 hover:bg-black/40 hover:scale-105">
+    <div className="fixed bottom-8 left-8 z-[100] flex items-center gap-3">
+      {/* Permanent Core Tools */}
+      <WallpaperButton />
+      <SearchButton />
       
-      {!isCollapsed && (
-        <>
+      {/* Vertical divider separating core tools from configuration settings */}
+      <div className="w-px h-8 bg-white/15 mx-1" />
+
+      {/* Expandable settings group, growing to the right anchor, meaning buttons reveal from right to left inside */}
+      <div className="flex items-center rounded-2xl bg-black/25 backdrop-blur-3xl border border-white/10 p-1.5 shadow-2xl transition-all duration-300 hover:bg-black/35">
+        
+        {/* Settings items wrapper on the left of toggle button, expanding to the left */}
+        <div 
+          className="flex items-center gap-2 overflow-hidden"
+          style={{
+            maxWidth: isCollapsed ? '0px' : '400px',
+            opacity: isCollapsed ? 0 : 1,
+            transform: isCollapsed ? 'translateX(20px)' : 'translateX(0)',
+            transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            marginRight: isCollapsed ? '0px' : '6px',
+            display: 'flex',
+            alignItems: 'center'
+          }}
+        >
           {/* Privacy Mode */}
-          <button
-            onClick={togglePrivacyMode}
-            title={isPrivacyMode ? "Disable Privacy Blur" : "Enable Privacy Blur"}
-            className={`p-3 rounded-xl transition-all duration-300 relative ${
-              isPrivacyMode 
-                ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]' 
-                : 'text-white/40 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            {isPrivacyMode ? <EyeOff size={20} /> : <Eye size={20} />}
-            {isPrivacyMode && (
-              <span className="absolute -left-20 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-red-500 text-[10px] font-bold text-white uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">
-                Private
-              </span>
-            )}
-          </button>
+          <div className="relative group/btn">
+            <button
+              onClick={togglePrivacyMode}
+              className={`p-3 rounded-xl transition-all duration-300 relative ${
+                isPrivacyMode 
+                  ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]' 
+                  : 'text-white/40 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              {isPrivacyMode ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+            <span className="absolute bottom-15 left-1/2 -translate-x-1/2 opacity-0 group-hover/btn:opacity-100 transition-opacity bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none border border-white/10">
+              {isPrivacyMode ? "Disable Privacy Blur" : "Enable Privacy Blur"}
+            </span>
+          </div>
 
           {/* Incognito Mode */}
-          <button
-            onClick={toggleIncognitoMode}
-            title={isIncognitoMode ? "Disable Incognito Routing" : "Enable Incognito Routing"}
-            className={`p-3 rounded-xl transition-all duration-300 relative ${
-              isIncognitoMode 
-                ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.4)]' 
-                : 'text-white/40 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <Ghost size={20} />
-            {isIncognitoMode && (
-              <span className="absolute -left-24 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-purple-600 text-[10px] font-bold text-white uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Incognito
-              </span>
-            )}
-          </button>
-
-          <div className="h-px bg-white/5 mx-2" />
+          <div className="relative group/btn">
+            <button
+              onClick={toggleIncognitoMode}
+              className={`p-3 rounded-xl transition-all duration-300 relative ${
+                isIncognitoMode 
+                  ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.4)]' 
+                  : 'text-white/40 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Ghost size={20} />
+            </button>
+            <span className="absolute bottom-15 left-1/2 -translate-x-1/2 opacity-0 group-hover/btn:opacity-100 transition-opacity bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none border border-white/10">
+              {isIncognitoMode ? "Disable Incognito Routing" : "Enable Incognito Routing"}
+            </span>
+          </div>
 
           {/* Import Button */}
-          <button
-            onClick={handleImport}
-            title="Import Chrome Bookmarks"
-            className="p-3 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-90"
-          >
-            <Download size={20} />
-          </button>
+          <div className="relative group/btn">
+            <button
+              onClick={handleImport}
+              className="p-3 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+            >
+              <Download size={20} />
+            </button>
+            <span className="absolute bottom-15 left-1/2 -translate-x-1/2 opacity-0 group-hover/btn:opacity-100 transition-opacity bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none border border-white/10">
+              Import Bookmarks
+            </span>
+          </div>
 
-          {/* Backup & Restore Layout Button */}
+          {/* Backup Button */}
           <BackupButton onClick={onOpenBackup} />
 
           {/* Appearance Settings */}
-          <button
-            onClick={onOpenAppearance}
-            title="Customization Settings"
-            className="p-3 rounded-xl text-white/40 hover:text-white hover:bg-emerald-500/20 hover:text-emerald-400 transition-all active:rotate-180 duration-500"
-          >
-            <Settings2 size={20} />
-          </button>
+          <div className="relative group/btn">
+            <button
+              onClick={onOpenAppearance}
+              className="p-3 rounded-xl text-white/40 hover:text-white hover:bg-emerald-500/20 hover:text-emerald-400 transition-all duration-500 active:scale-95"
+            >
+              <Sliders size={20} className="group-hover/btn:rotate-90 transition-transform duration-500" />
+            </button>
+            <span className="absolute bottom-15 left-1/2 -translate-x-1/2 opacity-0 group-hover/btn:opacity-100 transition-opacity bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none border border-white/10">
+              Appearance
+            </span>
+          </div>
 
           {/* Widget Gallery Toggle */}
-          <button
-            onClick={toggleGallery}
-            title="Widget Gallery"
-            className={`p-3 rounded-xl transition-all duration-300 relative group active:scale-95 ${
-              isGalleryOpen 
-                ? 'bg-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.4)]' 
-                : 'text-white/40 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <LayoutGrid size={20} />
-            <span className="absolute -left-28 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-amber-500 text-[10px] font-bold text-black uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+          <div className="relative group/btn">
+            <button
+              onClick={toggleGallery}
+              className={`p-3 rounded-xl transition-all duration-300 relative group active:scale-95 ${
+                isGalleryOpen 
+                  ? 'bg-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.4)]' 
+                  : 'text-white/40 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <LayoutGrid size={20} />
+            </button>
+            <span className="absolute bottom-15 left-1/2 -translate-x-1/2 opacity-0 group-hover/btn:opacity-100 transition-opacity bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-bold text-white uppercase tracking-tighter pointer-events-none border border-white/10">
               Widgets ({activeWidgets.length})
             </span>
-          </button>
+          </div>
+        </div>
 
-          <div className="h-px bg-white/5 mx-2" />
-        </>
-      )}
-
-      {/* Collapse Toggle */}
-      <button 
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        title={isCollapsed ? "Expand Menu" : "Collapse Menu"}
-        className="p-3 text-white/40 hover:text-white flex items-center justify-center hover:bg-white/10 rounded-xl transition-all"
-      >
-        {isCollapsed ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-      </button>
+        {/* Collapse Toggle settings button always on the right */}
+        <button 
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          title={isCollapsed ? "Expand settings" : "Collapse settings"}
+          className={`p-3 rounded-xl text-white/40 hover:text-white transition-all active:scale-95 duration-500 flex items-center justify-center hover:bg-white/10 ${
+            !isCollapsed ? 'rotate-90 text-white' : ''
+          }`}
+        >
+          <Settings2 size={20} />
+        </button>
+      </div>
     </div>
   );
 }

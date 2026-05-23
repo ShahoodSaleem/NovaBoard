@@ -558,60 +558,66 @@
 /* ════════════════════════════════════════
    CLOCK WIDGET
    ════════════════════════════════════════ */
-.clock-widget {
+/* ════════════════════════════════════════
+   CLOCK WIDGET (Capsule watch faces)
+   ════════════════════════════════════════ */
+.clock-widget-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 16px 18px;
-  flex: 1;
+  width: 100%;
   height: 100%;
 }
 
-.clock-analog {
-  flex-shrink: 0;
+.clock-capsule {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
 }
 
-.clock-svg {
-  width: 80px;
-  height: 80px;
-  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.08));
+.clock-capsule:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
 }
 
-.clock-digital {
-  flex: 1;
+.clock-capsule-shooting-star {
+  border: 1.8px solid rgba(0, 210, 255, 0.28) !important;
+  box-shadow: 0 0 20px rgba(0, 210, 255, 0.12), inset 0 0 15px rgba(0, 210, 255, 0.06), 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+.clock-capsule-shooting-star:hover {
+  border-color: rgba(0, 210, 255, 0.48) !important;
+  box-shadow: 0 0 25px rgba(0, 210, 255, 0.22), inset 0 0 20px rgba(0, 210, 255, 0.12), 0 15px 40px rgba(0, 0, 0, 0.6);
 }
 
-.clock-time-row {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  line-height: 1;
+.clock-capsule-wiggles {
+  border: 1.8px solid rgba(255, 255, 255, 0.07) !important;
+}
+.clock-capsule-wiggles:hover {
+  border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
-.clock-hm {
-  font-size: 2.8rem;
-  font-weight: 200;
-  color: white;
-  letter-spacing: -2px;
-  font-variant-numeric: tabular-nums;
+.clock-capsule-eastern-sunrise {
+  border: 1.8px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.clock-capsule-eastern-sunrise:hover {
+  border-color: rgba(255, 255, 255, 0.35) !important;
 }
 
-.clock-sec {
-  font-size: 1rem;
-  font-weight: 400;
-  color: var(--accent-color, #ef4444);
-  font-variant-numeric: tabular-nums;
-  opacity: 0.9;
-  align-self: flex-end;
-  padding-bottom: 5px;
+/* Wiggles SVG Path Animations */
+.clock-capsule-wiggles path {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 0;
+  animation: wiggleFlow 20s linear infinite;
 }
 
-.clock-date-row {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
-  margin-top: 6px;
-  letter-spacing: 0.02em;
+@keyframes wiggleFlow {
+  0% {
+    stroke-dashoffset: 600;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
 }
 
 /* ════════════════════════════════════════
@@ -620,8 +626,7 @@
 .task-widget {
   display: flex;
   flex-direction: column;
-  padding: 14px;
-  gap: 10px;
+  box-sizing: border-box;
   flex: 1;
   height: 100%;
   overflow: hidden;
@@ -635,12 +640,12 @@
 }
 
 .task-stat-text {
-  font-size: 12px;
+  font-size: 0.9em;
   color: rgba(255, 255, 255, 0.5);
 }
 
 .task-stat-done {
-  font-size: 16px;
+  font-size: 1.25em;
   font-weight: 700;
   color: #10b981;
 }
@@ -652,7 +657,7 @@
 }
 
 .task-stat-pct {
-  font-size: 12px;
+  font-size: 0.9em;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.5);
 }
@@ -675,16 +680,16 @@
 /* Input */
 .task-input-row {
   display: flex;
-  gap: 8px;
+  gap: 0.6em;
 }
 
 .task-input {
   flex: 1;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 9px;
-  padding: 8px 12px;
-  font-size: 12px;
+  border-radius: 0.65em;
+  padding: 0.65em 0.85em;
+  font-size: 0.95em;
   color: white;
   outline: none;
   transition: all 0.2s;
@@ -700,14 +705,14 @@
 }
 
 .task-add-btn {
-  width: 34px;
-  height: 34px;
+  width: 2.6em;
+  height: 2.6em;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--accent-color, #ef4444);
   border: none;
-  border-radius: 9px;
+  border-radius: 0.65em;
   color: white;
   cursor: pointer;
   transition: all 0.2s;
@@ -715,8 +720,8 @@
 }
 
 .task-add-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 1.2em;
+  height: 1.2em;
 }
 
 .task-add-btn:hover:not(:disabled) {
@@ -735,7 +740,7 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 0.4em;
 }
 
 .task-empty {
@@ -743,21 +748,21 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 0;
+  padding: 1.8em 0;
   color: rgba(255, 255, 255, 0.25);
   text-align: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 0.5em;
+  font-size: 0.95em;
 }
 
 .task-empty-icon {
-  width: 28px;
-  height: 28px;
+  width: 2.2em;
+  height: 2.2em;
   opacity: 0.4;
 }
 
 .task-empty-sub {
-  font-size: 11px;
+  font-size: 0.8em;
   opacity: 0.7;
 }
 
@@ -765,11 +770,11 @@
 .task-item {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 7px 9px;
+  gap: 0.7em;
+  padding: 0.55em 0.7em;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 9px;
+  border-radius: 0.65em;
   transition: all 0.2s;
 }
 
@@ -782,9 +787,9 @@
 }
 
 .task-checkbox {
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
+  width: 1.3em;
+  height: 1.3em;
+  border-radius: 0.35em;
   border: 1.5px solid rgba(255, 255, 255, 0.2);
   background: transparent;
   cursor: pointer;
@@ -797,8 +802,8 @@
 }
 
 .task-checkbox svg {
-  width: 10px;
-  height: 10px;
+  width: 0.75em;
+  height: 0.75em;
 }
 
 .task-checkbox.checked {
@@ -814,7 +819,7 @@
 
 .task-text {
   flex: 1;
-  font-size: 12px;
+  font-size: 0.95em;
   color: rgba(255, 255, 255, 0.85);
   word-break: break-word;
   line-height: 1.4;
@@ -825,9 +830,10 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
-.task-delete-btn {
-  width: 18px;
-  height: 18px;
+.task-delete-btn,
+.task-edit-btn {
+  width: 1.35em;
+  height: 1.35em;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -836,18 +842,20 @@
   color: rgba(255, 255, 255, 0.2);
   cursor: pointer;
   flex-shrink: 0;
-  border-radius: 4px;
+  border-radius: 0.3em;
   padding: 0;
   transition: all 0.15s;
   opacity: 0;
 }
 
-.task-delete-btn svg {
-  width: 11px;
-  height: 11px;
+.task-delete-btn svg,
+.task-edit-btn svg {
+  width: 0.8em;
+  height: 0.8em;
 }
 
-.task-item:hover .task-delete-btn {
+.task-item:hover .task-delete-btn,
+.task-item:hover .task-edit-btn {
   opacity: 1;
 }
 
@@ -856,14 +864,19 @@
   background: rgba(239, 68, 68, 0.1);
 }
 
+.task-edit-btn:hover {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
 /* Clear button */
 .task-clear-btn {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.07);
   color: rgba(255, 255, 255, 0.35);
-  font-size: 11px;
-  padding: 6px 10px;
-  border-radius: 7px;
+  font-size: 0.85em;
+  padding: 0.5em 0.8em;
+  border-radius: 0.5em;
   cursor: pointer;
   transition: all 0.2s;
   text-align: center;
