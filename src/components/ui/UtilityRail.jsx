@@ -6,7 +6,9 @@ import {
   Settings2, 
   Download,
   LayoutGrid,
-  Sliders
+  Sliders,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { useWidgetStore } from '../../store/useWidgetStore';
@@ -28,7 +30,9 @@ export function UtilityRail({ onOpenAppearance, onOpenBackup }) {
   const {
     toggleGallery,
     isGalleryOpen,
-    activeWidgets
+    activeWidgets,
+    isWidgetsLocked,
+    toggleWidgetsLock
   } = useWidgetStore();
 
   const handleImport = async () => {
@@ -51,7 +55,7 @@ export function UtilityRail({ onOpenAppearance, onOpenBackup }) {
         <div 
           className="flex items-center gap-2 overflow-hidden"
           style={{
-            maxWidth: isCollapsed ? '0px' : '400px',
+            maxWidth: isCollapsed ? '0px' : '450px',
             opacity: isCollapsed ? 0 : 1,
             transform: isCollapsed ? 'translateX(20px)' : 'translateX(0)',
             transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -137,6 +141,23 @@ export function UtilityRail({ onOpenAppearance, onOpenBackup }) {
             </button>
             <span className="absolute bottom-15 left-1/2 -translate-x-1/2 opacity-0 group-hover/btn:opacity-100 transition-opacity bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-bold text-white uppercase tracking-tighter pointer-events-none border border-white/10">
               Widgets ({activeWidgets.length})
+            </span>
+          </div>
+
+          {/* Global Widgets Lock Toggle */}
+          <div className="relative group/btn">
+            <button
+              onClick={toggleWidgetsLock}
+              className={`p-3 rounded-xl transition-all duration-300 relative group active:scale-95 ${
+                isWidgetsLocked 
+                  ? 'bg-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.4)] hover:bg-amber-400 hover:text-black' 
+                  : 'text-white/40 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              {isWidgetsLocked ? <Lock size={20} /> : <Unlock size={20} />}
+            </button>
+            <span className="absolute bottom-15 left-1/2 -translate-x-1/2 opacity-0 group-hover/btn:opacity-100 transition-opacity bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-bold text-white uppercase tracking-tighter pointer-events-none border border-white/10">
+              {isWidgetsLocked ? "Unlock Widgets" : "Lock Widgets"}
             </span>
           </div>
         </div>

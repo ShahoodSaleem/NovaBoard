@@ -87,21 +87,27 @@ const PlayerScreen = ({
   onPrev,
   onVolumeChange,
   onMuteToggle,
-  onDisconnect
+  onDisconnect,
+  size,
+  queue,
+  isOffline,
+  error
 }) => {
   const albumArt = track?.album?.images?.[0]?.url;
   const trackName = track?.name || 'Unknown Track';
   const artistName = track?.artists?.map((a) => a.name).join(', ') || 'Unknown Artist';
   const pct = duration > 0 ? (progress / duration) * 100 : 0;
 
+  const isWide = size && size.w > 540;
+
   return (
-    <div className="music-player-screen-new">
-      {/* Blurred album art background (visionOS-like feel behind the glass container) */}
+    <div className={`music-player-screen-new ${isWide ? 'music-split-mode' : ''}`}>
+      {/* Blurred album art background */}
       {albumArt && (
         <div className="music-bg-blur" style={{ backgroundImage: `url(${albumArt})` }} />
       )}
       
-      {/* Container layout split in two columns */}
+      {/* Container layout */}
       <div className="music-layout-columns">
         
         {/* LEFT COLUMN: Cover Art */}
@@ -113,15 +119,13 @@ const PlayerScreen = ({
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
             </div>
           )}
-          <Equalizer playing={isPlaying} />
+          <Equalizer playing={isPlaying && !isOffline} />
         </div>
 
-        {/* RIGHT COLUMN: Metadata & Controls */}
+        {/* CENTER/RIGHT COLUMN: Metadata & Controls */}
         <div className="music-right-col">
-          {/* Header Row: Apple/Spotify styled Logo + Meta Info + Logout Button */}
           <div className="music-meta-container">
             <div className="music-brand-and-title">
-              {/* Apple Icon */}
               <svg className="music-apple-logo" viewBox="0 0 170 170" fill="currentColor">
                 <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.13-1.92-14.34-6.12-3.8-3.08-7.8-7.91-12-14.51-6.7-10.74-12.03-23.75-16-39.04-3.97-15.29-5.96-29.35-5.96-42.18 0-14.75 3.86-26.88 11.6-36.4 7.73-9.51 17.5-14.36 29.28-14.53 5.48 0 11.29 1.48 17.44 4.43 6.14 2.95 10.3 4.43 12.48 4.43 1.9 0 5.86-1.39 11.89-4.18 7.42-3.4 13.91-4.94 19.46-4.63 15.18.9 26.65 6.64 34.42 17.22-11.97 7.27-17.8 17.15-17.5 29.62.3 9.97 4.13 18.23 11.5 24.8 7.37 6.57 16.1 10.15 26.19 10.74-1.9 6.2-4.48 12.4-7.73 18.6zm-26.01-114.7c0-7.86 2.82-15.15 8.45-21.87 6.84-8.13 15.29-12.79 25.32-13.68.17 1 .25 1.95.25 2.84 0 7.55-2.9 14.85-8.71 21.92-6.84 8.08-15.35 12.63-25.06 13.67-.17-.89-.25-1.84-.25-2.88z"/>
               </svg>
@@ -131,7 +135,6 @@ const PlayerScreen = ({
               </div>
             </div>
             
-            {/* Elegant Hover-Revealed Disconnect Power Button */}
             <button className="music-power-btn" onClick={onDisconnect} title="Disconnect Spotify">
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M13 3h-2v10h2V3zm4.78 1.42l-1.42 1.42A7.94 7.94 0 0 1 19 12c0 4.42-3.58 8-8 8s-8-3.58-8-8c0-2.82 1.46-5.3 3.64-6.74L5.22 4.42A9.913 9.913 0 0 0 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-3.13-1.44-5.92-3.72-7.58z"/>
@@ -139,22 +142,22 @@ const PlayerScreen = ({
             </button>
           </div>
 
-          {/* Progress Row (Inline Bar + Inline Times) */}
+          {/* Progress Row */}
           <div className="music-progress-row-new">
-            <span className="music-time-new">{fmt(progress)}</span>
+            <span className="music-time-new">{isOffline ? '0:00' : fmt(progress)}</span>
             <div className="music-progress-bar-container">
               <div className="music-progress-bar-track-new">
-                <div className="music-progress-bar-fill-new" style={{ width: `${pct}%` }} />
+                <div className="music-progress-bar-fill-new" style={{ width: `${isOffline ? 0 : pct}%` }} />
               </div>
             </div>
-            <span className="music-time-new">-{fmt(duration - progress)}</span>
+            <span className="music-time-new">{isOffline ? fmt(duration) : `-${fmt(duration - progress)}`}</span>
           </div>
 
           {/* Playback Controls & Cast/Bluetooth Button */}
           <div className="music-controls-row-new">
             <div className="music-playback-buttons">
               {/* Prev */}
-              <button className="music-btn-raw" onClick={onPrev} title="Previous">
+              <button className="music-btn-raw" onClick={onPrev} title="Previous" disabled={isOffline}>
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19 6L9 12l10 6V6zM7 6h2v12H7V6z"/>
                 </svg>
@@ -175,24 +178,30 @@ const PlayerScreen = ({
               </button>
 
               {/* Next */}
-              <button className="music-btn-raw" onClick={onNext} title="Next">
+              <button className="music-btn-raw" onClick={onNext} title="Next" disabled={isOffline}>
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M5 6v12l10-6L5 6zm12 0h2v12h-2V6z"/>
                 </svg>
               </button>
             </div>
 
-            {/* Cast / Bluetooth Airplay Icon */}
-            <button className="music-cast-btn" title="AirPlay / Wireless Devices">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.65 14.46c-.2.32-.63.42-.95.21-2.6-1.59-5.87-1.95-9.73-1.07-.37.09-.74-.14-.83-.51-.09-.37.14-.74.51-.83 4.22-.96 7.84-.55 10.77 1.24.32.2.42.63.21.95zm1.27-2.83c-.24.4-.77.52-1.17.28-2.98-1.83-7.51-2.36-11.03-1.29-.45.14-.93-.12-1.07-.57-.14-.45.12-.93.57-1.07 4.02-1.22 9.01-.63 12.42 1.47.4.24.52.77.28 1.17zm.11-2.95C14.71 8.63 9.36 8.46 6.29 9.4c-.55.17-1.13-.14-1.29-.69-.17-.55.14-1.13.69-1.29 3.57-1.08 9.5-.87 13.25 1.44.5.3.66.95.37 1.44-.3.5-.95.66-1.44.37z" style={{ fill: '#1DB954', opacity: 0.85 }} />
-              </svg>
-            </button>
+            {/* Status indicators / Offline badge */}
+            {isOffline ? (
+              <div className="music-offline-badge" title="Last Played track cached in local storage. Click Play to wake up Spotify.">
+                Last Played
+              </div>
+            ) : (
+              <button className="music-cast-btn" title="AirPlay / Wireless Devices">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.65 14.46c-.2.32-.63.42-.95.21-2.6-1.59-5.87-1.95-9.73-1.07-.37.09-.74-.14-.83-.51-.09-.37.14-.74.51-.83 4.22-.96 7.84-.55 10.77 1.24.32.2.42.63.21.95zm1.27-2.83c-.24.4-.77.52-1.17.28-2.98-1.83-7.51-2.36-11.03-1.29-.45.14-.93-.12-1.07-.57-.14-.45.12-.93.57-1.07 4.02-1.22 9.01-.63 12.42 1.47.4.24.52.77.28 1.17zm.11-2.95C14.71 8.63 9.36 8.46 6.29 9.4c-.55.17-1.13-.14-1.29-.69-.17-.55.14-1.13.69-1.29 3.57-1.08 9.5-.87 13.25 1.44.5.3.66.95.37 1.44-.3.5-.95.66-1.44.37z" style={{ fill: '#1DB954', opacity: 0.85 }} />
+                </svg>
+              </button>
+            )}
           </div>
 
-          {/* Volume Row with speaker icons */}
+          {/* Volume */}
           <div className="music-volume-row-new">
-            <button className="music-vol-icon-btn" onClick={onMuteToggle} title={volume === 0 ? 'Unmute' : 'Mute'}>
+            <button className="music-vol-icon-btn" onClick={onMuteToggle} title={volume === 0 ? 'Unmute' : 'Mute'} disabled={isOffline}>
               {volume === 0 ? (
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M3.63 3.63a.996.996 0 0 0 0 1.41L7.29 8.7 7 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.03a11.96 11.96 0 0 0 3.66-1.78l2.42 2.42a.996.996 0 1 0 1.41-1.41L5.05 3.63a.996.996 0 0 0-1.42 0z"/>
@@ -208,20 +217,61 @@ const PlayerScreen = ({
               type="range"
               min="0"
               max="100"
-              value={volume}
+              value={isOffline ? 50 : volume}
               onChange={(e) => onVolumeChange(parseInt(e.target.value))}
               className="music-volume-slider-new"
-              title={`Volume: ${volume}%`}
+              disabled={isOffline}
+              title={`Volume: ${isOffline ? 50 : volume}%`}
             />
 
-            <button className="music-vol-icon-btn louder" onClick={() => onVolumeChange(Math.min(100, volume + 10))} title="Louder">
+            <button className="music-vol-icon-btn louder" onClick={() => onVolumeChange(Math.min(100, volume + 10))} title="Louder" disabled={isOffline}>
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
               </svg>
             </button>
           </div>
-          
+
+          {/* Alert / Waking status message */}
+          {error && <div className="music-status-message">{error}</div>}
         </div>
+
+        {/* RIGHT COLUMN: Up Next Queue (Split Pane) */}
+        {isWide && (
+          <div className="music-queue-col">
+            <div className="music-queue-header">Up Next</div>
+            <div className="music-queue-list custom-scrollbar">
+              {queue && queue.length > 0 ? (
+                queue.map((item, index) => {
+                  const itemArt = item?.album?.images?.[2]?.url || item?.album?.images?.[0]?.url;
+                  return (
+                    <div key={`${item.id}-${index}`} className="music-queue-item">
+                      {itemArt ? (
+                        <img src={itemArt} alt={item.name} className="music-queue-art" />
+                      ) : (
+                        <div className="music-queue-placeholder">
+                          <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+                            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                          </svg>
+                        </div>
+                      )}
+                      <div className="music-queue-meta">
+                        <div className="music-queue-title" title={item.name}>{item.name}</div>
+                        <div className="music-queue-artist" title={item.artists.map(a => a.name).join(', ')}>
+                          {item.artists.map(a => a.name).join(', ')}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="music-queue-empty">
+                  {isOffline ? "Unavailable offline" : "Queue is empty"}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
@@ -268,20 +318,31 @@ const NoTrackScreen = ({ onDisconnect, onLaunch }) => (
 );
 
 /* ── Main Music Widget ── */
-export const MusicWidget = () => {
+export const MusicWidget = ({ size }) => {
   const { spotifyClientId, saveSpotifyClientId } = useWidgetStore();
   const [clientIdInput, setClientIdInput] = useState(spotifyClientId || '');
   const [isConnected, setIsConnected]   = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [track, setTrack]               = useState(null);
+  const [lastPlayedTrack, setLastPlayedTrack] = useState(() => {
+    try {
+      const cached = localStorage.getItem('flowmarks_spotify_last_track');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const [isPlaying, setIsPlaying]       = useState(false);
   const [progress, setProgress]         = useState(0);
   const [duration, setDuration]         = useState(0);
   const [volume, setVolumeState]        = useState(50);
   const [prevVolume, setPrevVolume]     = useState(50);
   const [error, setError]               = useState(null);
-  const pollRef    = useRef(null);
+  const [queue, setQueue]               = useState([]);
+  
+  const pollRef     = useRef(null);
   const progressRef = useRef(null);
+  const ticksRef    = useRef(0);
 
   // Sync input with store
   useEffect(() => { setClientIdInput(spotifyClientId || ''); }, [spotifyClientId]);
@@ -291,13 +352,16 @@ export const MusicWidget = () => {
     clearInterval(progressRef.current);
   };
 
-  const handleLaunchSpotify = () => {
-    if (typeof chrome !== 'undefined' && chrome.tabs) {
-      chrome.tabs.create({ url: 'https://open.spotify.com', active: true });
-    } else {
-      window.open('https://open.spotify.com', '_blank');
+  const fetchQueue = useCallback(async () => {
+    try {
+      const data = await spotifyService.getQueue();
+      if (data && data.queue) {
+        setQueue(data.queue.slice(0, 4));
+      }
+    } catch (e) {
+      console.error('Failed to fetch queue:', e);
     }
-  };
+  }, []);
 
   const fetchPlayer = useCallback(async () => {
     try {
@@ -307,19 +371,21 @@ export const MusicWidget = () => {
         setIsPlaying(data.is_playing);
         setProgress(data.progress_ms || 0);
         setDuration(data.item.duration_ms || 0);
+        
+        // Cache track
+        localStorage.setItem('flowmarks_spotify_last_track', JSON.stringify(data.item));
+        setLastPlayedTrack(data.item);
+
         if (data.device && typeof data.device.volume_percent === 'number') {
           setVolumeState(data.device.volume_percent);
         }
-      } else {
-        // Nothing active. Check if we should auto-launch this session.
-        if (!sessionStorage.getItem('spotify_launched_this_session')) {
-          sessionStorage.setItem('spotify_launched_this_session', 'true');
-          if (typeof chrome !== 'undefined' && chrome.tabs) {
-            chrome.tabs.create({ url: 'https://open.spotify.com', active: false }); // Background launch
-          } else {
-            window.open('https://open.spotify.com', '_blank');
-          }
+
+        // Fetch queue once every 2 ticks (12 seconds)
+        ticksRef.current++;
+        if (ticksRef.current % 2 === 0) {
+          fetchQueue();
         }
+      } else {
         setTrack(null);
       }
     } catch (e) {
@@ -328,19 +394,19 @@ export const MusicWidget = () => {
         stopPoll();
       }
     }
-  }, []);
+  }, [fetchQueue]);
 
   const startPoll = useCallback(() => {
     fetchPlayer();
+    fetchQueue();
     pollRef.current = setInterval(fetchPlayer, 6000);
-    // Local progress tick
     progressRef.current = setInterval(() => {
       setIsPlaying((playing) => {
         if (playing) setProgress((p) => p + 1000);
         return playing;
       });
     }, 1000);
-  }, [fetchPlayer]);
+  }, [fetchPlayer, fetchQueue]);
 
   useEffect(() => {
     spotifyService.getToken().then((token) => {
@@ -368,13 +434,51 @@ export const MusicWidget = () => {
     await spotifyService.logout();
     setIsConnected(false);
     setTrack(null);
+    setLastPlayedTrack(null);
+    localStorage.removeItem('flowmarks_spotify_last_track');
   };
 
-  const handlePlay = async () => {
+  const handlePlayActive = async () => {
     try {
       if (isPlaying) { await spotifyService.pause(); setIsPlaying(false); }
       else           { await spotifyService.play();  setIsPlaying(true);  }
     } catch { setError('Playback requires Spotify Premium'); }
+  };
+
+  const handlePlayOffline = async () => {
+    if (!lastPlayedTrack) return;
+    setError(null);
+    try {
+      // 1. Try to play via active device
+      await spotifyService.play({ uris: [lastPlayedTrack.uri] });
+      setIsPlaying(true);
+      setTimeout(fetchPlayer, 800);
+    } catch (err) {
+      // 2. No active device: open Spotify Web Player and trigger a retry poll
+      setError('Waking up Spotify session…');
+      if (typeof chrome !== 'undefined' && chrome.tabs) {
+        chrome.tabs.create({ url: 'https://open.spotify.com', active: false });
+      } else {
+        window.open('https://open.spotify.com', '_blank');
+      }
+
+      let attempts = 0;
+      const retryId = setInterval(async () => {
+        attempts++;
+        try {
+          await spotifyService.play({ uris: [lastPlayedTrack.uri] });
+          clearInterval(retryId);
+          setError(null);
+          setIsPlaying(true);
+          setTimeout(fetchPlayer, 800);
+        } catch {
+          if (attempts >= 12) {
+            clearInterval(retryId);
+            setError('Could not wake up session. Please play manual inside the Spotify tab.');
+          }
+        }
+      }, 2000);
+    }
   };
 
   const handleNext = async () => {
@@ -403,6 +507,14 @@ export const MusicWidget = () => {
     }
   };
 
+  const handleLaunchSpotify = () => {
+    if (typeof chrome !== 'undefined' && chrome.tabs) {
+      chrome.tabs.create({ url: 'https://open.spotify.com', active: true });
+    } else {
+      window.open('https://open.spotify.com', '_blank');
+    }
+  };
+
   const handleSaveClientId = () => { saveSpotifyClientId(clientIdInput); };
 
   if (!isConnected) {
@@ -418,7 +530,31 @@ export const MusicWidget = () => {
     );
   }
 
-  if (!track) return <NoTrackScreen onDisconnect={handleDisconnect} onLaunch={handleLaunchSpotify} />;
+  // Fallback: If no active song, check if we have a last-played cached fallback!
+  if (!track) {
+    if (lastPlayedTrack) {
+      return (
+        <PlayerScreen
+          track={lastPlayedTrack}
+          isPlaying={false}
+          progress={0}
+          duration={lastPlayedTrack.duration_ms || 0}
+          volume={volume}
+          onPlay={handlePlayOffline}
+          onNext={handleNext}
+          onPrev={handlePrev}
+          onVolumeChange={handleVolumeChange}
+          onMuteToggle={handleMuteToggle}
+          onDisconnect={handleDisconnect}
+          size={size}
+          queue={queue}
+          isOffline={true}
+          error={error}
+        />
+      );
+    }
+    return <NoTrackScreen onDisconnect={handleDisconnect} onLaunch={handleLaunchSpotify} />;
+  }
 
   return (
     <PlayerScreen
@@ -427,12 +563,16 @@ export const MusicWidget = () => {
       progress={progress}
       duration={duration}
       volume={volume}
-      onPlay={handlePlay}
+      onPlay={handlePlayActive}
       onNext={handleNext}
       onPrev={handlePrev}
       onVolumeChange={handleVolumeChange}
       onMuteToggle={handleMuteToggle}
       onDisconnect={handleDisconnect}
+      size={size}
+      queue={queue}
+      isOffline={false}
+      error={error}
     />
   );
 };

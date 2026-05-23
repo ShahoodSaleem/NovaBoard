@@ -271,10 +271,11 @@ class SpotifyService {
   }
 
   getCurrentlyPlaying() { return this.apiRequest('/me/player'); }
-  play()     { return this.apiRequest('/me/player/play',     'PUT'); }
+  play(body = null) { return this.apiRequest('/me/player/play', 'PUT', body); }
   pause()    { return this.apiRequest('/me/player/pause',    'PUT'); }
   next()     { return this.apiRequest('/me/player/next',     'POST'); }
   previous() { return this.apiRequest('/me/player/previous', 'POST'); }
+  getQueue() { return this.apiRequest('/me/player/queue'); }
   setVolume(percent) { return this.apiRequest(`/me/player/volume?volume_percent=${percent}`, 'PUT'); }
 }
 
