@@ -1,31 +1,40 @@
 import React from 'react';
-import { 
-  Eye, 
-  EyeOff, 
-  Ghost, 
-  Settings2, 
+import {
+  Eye,
+  EyeOff,
+  Ghost,
+  Settings2,
   Download,
   LayoutGrid,
   Sliders,
   Lock,
-  Unlock
+  Unlock,
+  Trash2,
+  Copy
 } from 'lucide-react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { useWidgetStore } from '../../store/useWidgetStore';
 import { BackupButton } from './BackupButton';
 import SearchButton from './SearchButton';
 import WallpaperButton from './WallpaperButton';
+import { findDuplicateGroups } from '../../utils/bookmarkUtils';
 
-export function UtilityRail({ onOpenAppearance, onOpenBackup }) {
+export function UtilityRail({ onOpenAppearance, onOpenBackup, onOpenTrash, onOpenDuplicates }) {
   const [isCollapsed, setIsCollapsed] = React.useState(true);
-  const { 
-    isPrivacyMode, 
-    togglePrivacyMode, 
-    isIncognitoMode, 
+  const {
+    isPrivacyMode,
+    togglePrivacyMode,
+    isIncognitoMode,
     toggleIncognitoMode,
     importChromeBookmarks,
-    activeWorkspaceId
+    activeWorkspaceId,
+    workspaces,
+    trash
   } = useWorkspaceStore();
+
+  const trashCount = trash.filter(t => t.workspaceId === activeWorkspaceId).length;
+  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
+  const duplicateCount = activeWorkspace ? findDuplicateGroups(activeWorkspace.columns).length : 0;
 
   const {
     toggleGallery,
@@ -114,6 +123,38 @@ export function UtilityRail({ onOpenAppearance, onOpenBackup }) {
           {/* Backup Button */}
           <BackupButton onClick={onOpenBackup} />
 
+          {/* Trash / Recently Deleted */}
+          <div className="relative group/btn">
+            <button
+              onClick={onOpenTrash}
+              className="p-3 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-90 relative"
+            >
+              <Trash2 size={20} />
+              {trashCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400" />
+              )}
+            </button>
+            <span className="absolute bottom-15 left-1/2 -translate-x-1/2 opacity-0 group-hover/btn:opacity-100 transition-opacity bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none border border-white/10">
+              Recently Deleted{trashCount > 0 ? ` (${trashCount})` : ''}
+            </span>
+          </div>
+
+          {/* Duplicate Bookmarks */}
+          <div className="relative group/btn">
+            <button
+              onClick={onOpenDuplicates}
+              className="p-3 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-90 relative"
+            >
+              <Copy size={20} />
+              {duplicateCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400" />
+              )}
+            </button>
+            <span className="absolute bottom-15 left-1/2 -translate-x-1/2 opacity-0 group-hover/btn:opacity-100 transition-opacity bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none border border-white/10">
+              Duplicates{duplicateCount > 0 ? ` (${duplicateCount})` : ''}
+            </span>
+          </div>
+
           {/* Appearance Settings */}
           <div className="relative group/btn">
             <button
@@ -157,7 +198,7 @@ export function UtilityRail({ onOpenAppearance, onOpenBackup }) {
               {isWidgetsLocked ? <Lock size={20} /> : <Unlock size={20} />}
             </button>
             <span className="absolute bottom-15 left-1/2 -translate-x-1/2 opacity-0 group-hover/btn:opacity-100 transition-opacity bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-bold text-white uppercase tracking-tighter pointer-events-none border border-white/10">
-              {isWidgetsLocked ? "Unlock Widgets" : "Lock Widgets"}
+              {isWidgetsLocked ? "Unlock Layout" : "Lock Layout"}
             </span>
           </div>
         </div>

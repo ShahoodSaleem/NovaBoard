@@ -1,6 +1,7 @@
-const WIDGET_KEY = 'flowmarks_widgets';
-const TASKS_KEY  = 'flowmarks_tasks';
+const TASKS_KEY = 'flowmarks_tasks';
 const SPOTIFY_CLIENT_KEY = 'flowmarks_spotify_client_id';
+
+const widgetKey = (wsId) => `flowmarks_widgets_${wsId}`;
 
 /* ── chrome.storage.local helpers ── */
 const getLocal = (key) =>
@@ -55,10 +56,13 @@ export const useWidgetStore = create((set, get) => ({
   isGalleryOpen: false,
   spotifyClientId: '',
   isWidgetsLocked: false,
+  currentWorkspaceId: null,
 
-  loadWidgets: async () => {
+  // wsId is the active workspace — widgets are stored per workspace
+  loadWidgets: async (wsId) => {
+    const key = widgetKey(wsId);
     const [widgets, tasks, clientId, isLocked] = await Promise.all([
-      getLocal(WIDGET_KEY),
+      getLocal(key),
       getLocal(TASKS_KEY),
       getLocal(SPOTIFY_CLIENT_KEY),
       getLocal('flowmarks_widgets_locked'),
@@ -68,6 +72,7 @@ export const useWidgetStore = create((set, get) => ({
       tasks: tasks || [],
       spotifyClientId: clientId || '',
       isWidgetsLocked: !!isLocked,
+      currentWorkspaceId: wsId,
     });
   },
 
@@ -78,8 +83,8 @@ export const useWidgetStore = create((set, get) => ({
   },
 
   addWidget: async (type) => {
-    const { activeWidgets } = get();
-    if (activeWidgets.find((w) => w.type === type)) return; // one instance only
+    const { activeWidgets, currentWorkspaceId } = get();
+    if (activeWidgets.find((w) => w.type === type)) return;
     const def = WIDGET_DEFS.find((d) => d.type === type);
     const newWidget = {
       id: `${type}_${Date.now()}`,
@@ -89,37 +94,37 @@ export const useWidgetStore = create((set, get) => ({
       size: def?.defaultSize || { w: 300, h: 200 },
     };
     const updated = [...activeWidgets, newWidget];
-    await setLocal(WIDGET_KEY, updated);
+    await setLocal(widgetKey(currentWorkspaceId), updated);
     set({ activeWidgets: updated });
   },
 
   removeWidget: async (widgetId) => {
-    const { activeWidgets } = get();
+    const { activeWidgets, currentWorkspaceId } = get();
     const updated = activeWidgets.filter((w) => w.id !== widgetId);
-    await setLocal(WIDGET_KEY, updated);
+    await setLocal(widgetKey(currentWorkspaceId), updated);
     set({ activeWidgets: updated });
   },
 
   updateWidgetPosition: async (widgetId, position) => {
-    const { activeWidgets } = get();
+    const { activeWidgets, currentWorkspaceId } = get();
     const updated = activeWidgets.map((w) => (w.id === widgetId ? { ...w, position } : w));
-    await setLocal(WIDGET_KEY, updated);
+    await setLocal(widgetKey(currentWorkspaceId), updated);
     set({ activeWidgets: updated });
   },
 
   updateWidgetSize: async (widgetId, size) => {
-    const { activeWidgets } = get();
+    const { activeWidgets, currentWorkspaceId } = get();
     const updated = activeWidgets.map((w) => (w.id === widgetId ? { ...w, size } : w));
-    await setLocal(WIDGET_KEY, updated);
+    await setLocal(widgetKey(currentWorkspaceId), updated);
     set({ activeWidgets: updated });
   },
 
   toggleMinimize: async (widgetId) => {
-    const { activeWidgets } = get();
+    const { activeWidgets, currentWorkspaceId } = get();
     const updated = activeWidgets.map((w) =>
       w.id === widgetId ? { ...w, minimized: !w.minimized } : w
     );
-    await setLocal(WIDGET_KEY, updated);
+    await setLocal(widgetKey(currentWorkspaceId), updated);
     set({ activeWidgets: updated });
   },
 
@@ -131,7 +136,7 @@ export const useWidgetStore = create((set, get) => ({
     set({ spotifyClientId: id });
   },
 
-  /* ── Tasks ── */
+  /* ── Tasks (global, not per-workspace) ── */
   addTask: async (text) => {
     const { tasks } = get();
     const task = { id: `task_${Date.now()}`, text, completed: false, createdAt: Date.now() };

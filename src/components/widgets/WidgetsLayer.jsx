@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useWidgetStore } from '../../store/useWidgetStore';
+import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { WidgetContainer } from './WidgetContainer';
 import { ClockWidget } from './ClockWidget';
 import { TaskWidget } from './TaskWidget';
@@ -13,10 +14,12 @@ const WIDGET_MAP = {
 
 export const WidgetsLayer = () => {
   const { activeWidgets, loadWidgets } = useWidgetStore();
+  const activeWorkspaceId = useWorkspaceStore(s => s.activeWorkspaceId);
 
+  // Reload widgets whenever the active workspace changes
   useEffect(() => {
-    loadWidgets();
-  }, [loadWidgets]);
+    if (activeWorkspaceId) loadWidgets(activeWorkspaceId);
+  }, [activeWorkspaceId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="widgets-layer">

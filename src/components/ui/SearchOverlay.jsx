@@ -26,8 +26,8 @@ function SearchOverlay() {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh] px-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-300">
-      <div 
-        className="w-full max-w-2xl bg-[#1a1a1a]/90 rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden animate-in slide-in-from-top-4 duration-500"
+      <div
+        className="w-full max-w-2xl glass-group rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-top-4 duration-500"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative flex items-center p-6">
