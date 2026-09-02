@@ -79,14 +79,22 @@ async function generateCodeChallenge(v) {
   return base64urlencode(hashed);
 }
 
+function getRedirectUri() {
+  return typeof chrome !== 'undefined' && chrome.runtime
+    ? `https://${chrome.runtime.id}.chromiumapp.org/`
+    : `${window.location.origin}/callback`;
+}
+
 class SpotifyService {
+  getRedirectUri() {
+    return getRedirectUri();
+  }
+
   async authenticate(clientId) {
+    clientId = (clientId || '').trim();
     if (!clientId) throw new Error('No Spotify Client ID provided');
 
-    const redirectUri =
-      typeof chrome !== 'undefined' && chrome.runtime
-        ? `https://${chrome.runtime.id}.chromiumapp.org/`
-        : `${window.location.origin}/callback`;
+    const redirectUri = getRedirectUri();
 
     const codeVerifier = generateCodeVerifier();
     await setLocal({ 'flowmarks_spotify_code_verifier': codeVerifier });
@@ -271,7 +279,11 @@ class SpotifyService {
   }
 
   getCurrentlyPlaying() { return this.apiRequest('/me/player'); }
-  play(body = null) { return this.apiRequest('/me/player/play', 'PUT', body); }
+  getDevices() { return this.apiRequest('/me/player/devices'); }
+  play(body = null, deviceId = null) {
+    const qs = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : '';
+    return this.apiRequest(`/me/player/play${qs}`, 'PUT', body);
+  }
   pause()    { return this.apiRequest('/me/player/pause',    'PUT'); }
   next()     { return this.apiRequest('/me/player/next',     'POST'); }
   previous() { return this.apiRequest('/me/player/previous', 'POST'); }

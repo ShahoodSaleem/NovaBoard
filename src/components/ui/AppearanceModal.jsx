@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sliders, Sun, Droplets, FastForward, Command } from 'lucide-react';
+import { X, Sliders, Sun, Droplets, FastForward, Command, Sparkles, Play } from 'lucide-react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 
-export function AppearanceModal({ isOpen, onClose }) {
-  const { bgBlur, bgBrightness, videoFps, wallpaperType, updateBgStyles } = useWorkspaceStore();
+export function AppearanceModal({ isOpen, onClose, onPreviewStartupAnimation }) {
+  const {
+    bgBlur,
+    bgBrightness,
+    videoFps,
+    wallpaperType,
+    updateBgStyles,
+    startupAnimationEnabled,
+    setStartupAnimationEnabled
+  } = useWorkspaceStore();
   const [shortcut, setShortcut] = useState('Ctrl+Shift+W');
 
   useEffect(() => {
@@ -32,7 +40,46 @@ export function AppearanceModal({ isOpen, onClose }) {
           </button>
         </div>
 
-        <div className="p-6 space-y-8">
+        <div className="p-6 space-y-6">
+          {/* Startup Animation Toggle */}
+          <div className="p-3.5 rounded-xl bg-white/[0.04] border border-white/10 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-white/80">
+                <Sparkles size={16} className="text-amber-400" />
+                <span className="text-sm font-medium">Startup Intro Animation</span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={startupAnimationEnabled}
+                onClick={() => setStartupAnimationEnabled(!startupAnimationEnabled)}
+                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 cursor-pointer ${
+                  startupAnimationEnabled ? 'bg-amber-400' : 'bg-white/15'
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
+                    startupAnimationEnabled ? 'translate-x-5 bg-black' : 'translate-x-0 bg-white'
+                  }`}
+                />
+              </button>
+            </div>
+            <div className="flex items-center justify-between pt-1 text-xs text-white/40">
+              <span>Plays once per browser session</span>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onPreviewStartupAnimation?.();
+                }}
+                className="text-xs text-white/60 hover:text-amber-400 font-medium px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 transition-all flex items-center gap-1 active:scale-95"
+              >
+                <Play size={11} className="fill-current" />
+                Preview
+              </button>
+            </div>
+          </div>
+
           {/* Blur Slider */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -71,8 +118,8 @@ export function AppearanceModal({ isOpen, onClose }) {
             />
           </div>
 
-          {/* Video FPS / Speed Slider (only if video) */}
-          {wallpaperType?.startsWith('video/') && (
+          {/* Video FPS / Speed Slider (only for video wallpapers — not YouTube iframes) */}
+          {(wallpaperType?.startsWith('video/') || wallpaperType === 'video/url') && wallpaperType !== 'youtube-embed' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-white/60">
@@ -123,5 +170,6 @@ export function AppearanceModal({ isOpen, onClose }) {
         </div>
       </div>
     </div>
+
   );
 }

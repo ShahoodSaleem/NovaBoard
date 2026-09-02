@@ -37,8 +37,10 @@ export const useWorkspaceStore = create((set, get) => ({
   isInitialized: false,
   currentWallpaper: null,
   wallpaperType: null,
+  // 'youtube-embed' | 'video/url' | 'image/url' | 'video/*' (blob) | 'image/*' (blob) | null
 
   // UI States
+  currentMode: 'bookmarks', // 'bookmarks' | 'analytics'
   isSearchOpen: false,
   searchQuery: '',
   isAddWorkspaceModalOpen: false,
@@ -47,84 +49,199 @@ export const useWorkspaceStore = create((set, get) => ({
   bgBlur: 0,
   bgBrightness: 100,
   videoFps: 60,
+  startupAnimationEnabled: true,
 
   initialize: async () => {
-    const data = await storageService.loadData();
-    const wallpaperBlob = await wallpaperService.getWallpaper();
-    const wallpaperUrl = wallpaperBlob ? URL.createObjectURL(wallpaperBlob) : null;
-    const wallpaperType = wallpaperBlob?.type || null;
-
-    if (data && data.workspaces) {
-      const migratedWorkspaces = data.workspaces.map(ws => ({
-        ...ws,
-        columns: ws.columns.map(col => ({
-          ...col,
-          laneId: col.laneId || col.id
-        }))
-      }));
-      const freshTrash = (data.trash || []).filter(item => Date.now() - item.deletedAt <= THIRTY_DAYS_MS);
-
-      set({
-        workspaces: migratedWorkspaces,
-        activeWorkspaceId: data.activeWorkspaceId || migratedWorkspaces[0].id,
-        trash: freshTrash,
-        currentWallpaper: wallpaperUrl,
-        wallpaperType,
-        isPrivacyMode: data.isPrivacyMode || false,
-        isIncognitoMode: data.isIncognitoMode || false,
-        bgBlur: data.bgBlur ?? 0,
-        bgBrightness: data.bgBrightness ?? 100,
-        videoFps: data.videoFps ?? (data.videoPlaybackRate ? data.videoPlaybackRate * 60 : 60),
-        isInitialized: true
-      });
-
-      if (freshTrash.length !== (data.trash || []).length) {
-        await storageService.saveData({ ...data, workspaces: migratedWorkspaces, trash: freshTrash });
+    try {
+      let data = null;
+      try {
+        data = await storageService.loadData();
+      } catch (err) {
+        console.warn('Storage load warning:', err);
       }
-    } else {
-      const defaultState = {
+
+      let wallpaperBlob = null;
+      try {
+        wallpaperBlob = await wallpaperService.getWallpaper();
+      } catch (err) {
+        console.warn('Wallpaper load warning:', err);
+      }
+
+      const wallpaperUrl = wallpaperBlob ? URL.createObjectURL(wallpaperBlob) : null;
+      const wallpaperType = wallpaperBlob?.type || null;
+
+      if (data && Array.isArray(data.workspaces) && data.workspaces.length > 0) {
+        const migratedWorkspaces = data.workspaces.map(ws => ({
+          ...ws,
+          columns: (ws.columns || []).map(col => ({
+            ...col,
+            bookmarks: Array.isArray(col?.bookmarks) ? col.bookmarks : [],
+            laneId: col?.laneId || col?.id
+          }))
+        }));
+        const freshTrash = (data.trash || []).filter(item => item && item.deletedAt && (Date.now() - item.deletedAt <= THIRTY_DAYS_MS));
+
+        const validActiveId = migratedWorkspaces.some(w => w.id === data.activeWorkspaceId)
+          ? data.activeWorkspaceId
+          : migratedWorkspaces[0].id;
+
+        // URL-based wallpapers are stored in chrome.storage.local; blob wallpapers in IndexedDB
+        const isUrlWallpaper = data.wallpaperType === 'youtube-embed' ||
+          data.wallpaperType === 'video/url' ||
+          data.wallpaperType === 'image/url';
+
+        // ── Migrate old YouTube embed URLs ──────────────────────────────────────
+        // Previous builds included controls=0/disablekb=1/showinfo=0 which cause
+        // Error 513. Strip those params from any stored URL automatically.
+        let storedWallpaperUrl = data.wallpaperUrl || null;
+        if (data.wallpaperType === 'youtube-embed' && storedWallpaperUrl) {
+          storedWallpaperUrl = storedWallpaperUrl
+            .replace(/[&?]controls=0/g, '')
+            .replace(/[&?]disablekb=1/g, '')
+            .replace(/[&?]showinfo=0/g, '');
+        }
+
+        const resolvedWallpaper = isUrlWallpaper ? storedWallpaperUrl : wallpaperUrl;
+        const resolvedWallpaperType = isUrlWallpaper ? data.wallpaperType : wallpaperType;
+
+        set({
+          workspaces: migratedWorkspaces,
+          activeWorkspaceId: validActiveId,
+          trash: freshTrash,
+          currentWallpaper: resolvedWallpaper,
+          wallpaperType: resolvedWallpaperType,
+          currentMode: data.currentMode || 'bookmarks',
+          isPrivacyMode: data.isPrivacyMode || false,
+          isIncognitoMode: data.isIncognitoMode || false,
+          bgBlur: data.bgBlur ?? 0,
+          bgBrightness: data.bgBrightness ?? 100,
+          videoFps: data.videoFps ?? (data.videoPlaybackRate ? data.videoPlaybackRate * 60 : 60),
+          startupAnimationEnabled: data.startupAnimationEnabled ?? true,
+          isInitialized: true
+        });
+
+        if (freshTrash.length !== (data.trash || []).length) {
+          await storageService.saveData({ ...data, workspaces: migratedWorkspaces, trash: freshTrash });
+        }
+      } else {
+        const defaultState = {
+          workspaces: DEFAULT_WORKSPACES,
+          activeWorkspaceId: DEFAULT_WORKSPACES[0].id,
+          trash: [],
+          currentWallpaper: wallpaperUrl,
+          wallpaperType,
+          currentMode: 'bookmarks',
+          isPrivacyMode: false,
+          isIncognitoMode: false,
+          bgBlur: 0,
+          bgBrightness: 100,
+          videoFps: 60,
+          startupAnimationEnabled: true,
+          isInitialized: true
+        };
+        set(defaultState);
+        await storageService.saveData(defaultState);
+      }
+    } catch (err) {
+      console.error('Fatal initialization error:', err);
+      set({
         workspaces: DEFAULT_WORKSPACES,
         activeWorkspaceId: DEFAULT_WORKSPACES[0].id,
         trash: [],
-        currentWallpaper: wallpaperUrl,
-        wallpaperType,
-        isPrivacyMode: false,
-        isIncognitoMode: false,
-        bgBlur: 0,
-        bgBrightness: 100,
-        videoFps: 60,
         isInitialized: true
-      };
-      set(defaultState);
-      await storageService.saveData(defaultState);
+      });
     }
   },
 
-  setActiveWorkspace: (id) => {
+  setActiveWorkspace: async (id) => {
     set({ activeWorkspaceId: id });
-    const state = get();
-    storageService.saveData({
-      workspaces: state.workspaces,
-      activeWorkspaceId: id,
-      isPrivacyMode: state.isPrivacyMode,
-      isIncognitoMode: state.isIncognitoMode,
-      bgBlur: state.bgBlur,
-      bgBrightness: state.bgBrightness,
-      videoFps: state.videoFps
-    });
+    await get()._save();
   },
 
   setWallpaper: async (file) => {
     await wallpaperService.saveWallpaper(file);
+    // Revoke previous blob URL only (URL-type wallpapers are plain strings, not blob: URLs)
     const oldUrl = get().currentWallpaper;
-    if (oldUrl) URL.revokeObjectURL(oldUrl);
+    if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
     const newWallpaperUrl = URL.createObjectURL(file);
+    // Clear any stored URL wallpaper from storage since we're switching to a blob
     set({ currentWallpaper: newWallpaperUrl, wallpaperType: file.type });
+    await get()._save();
+  },
+
+  // Sets a URL-based wallpaper (YouTube embed, direct video/image link).
+  // Detects the URL type and stores everything in chrome.storage.local.
+  setWallpaperUrl: async (rawUrl) => {
+    const url = rawUrl.trim();
+    if (!url) return;
+
+    let processedUrl = url;
+    let type;
+
+    // ── Detect YouTube ──
+    // Handles: youtube.com/watch?v=ID, youtu.be/ID, youtube.com/shorts/ID
+    const ytMatch = url.match(
+      /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/
+    );
+    if (ytMatch) {
+      const videoId = ytMatch[1];
+      // controls=0 / disablekb=1 / showinfo=0 cause Error 513 on many videos — removed.
+      // The iframe has pointer-events:none and is covered by the board UI so controls are invisible.
+      // iv_load_policy=3 hides video annotations; fs=0 disables the fullscreen button.
+      processedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&modestbranding=1&rel=0&iv_load_policy=3&fs=0`;
+      type = 'youtube-embed';
+    } else {
+      // ── Detect direct video URLs by extension ──
+      const isVideo = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(url);
+      const isImage = /\.(jpg|jpeg|png|gif|webp|avif|svg)(\?.*)?$/i.test(url);
+      type = isVideo ? 'video/url' : isImage ? 'image/url' : 'video/url'; // default to video/url for unknown
+
+      // ── Auto-upgrade Mixkit URLs to 1080p ──────────────────────────────────
+      // Mixkit serves the same video at multiple quality tiers via a suffix swap.
+      // -small.mp4 / -preview.mp4 / -medium.mp4 → -1080p.mp4 (Full HD)
+      if (processedUrl.includes('mixkit.co') && type === 'video/url') {
+        processedUrl = processedUrl
+          .replace(/(-small)(\.mp4)/gi, '-1080p$2')
+          .replace(/(-preview)(\.mp4)/gi, '-1080p$2')
+          .replace(/(-medium)(\.mp4)/gi, '-1080p$2');
+      }
+    }
+
+    // Revoke any existing blob URL before switching to a URL wallpaper
+    const oldUrl = get().currentWallpaper;
+    if (oldUrl && oldUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(oldUrl);
+      // Also clear the IndexedDB blob since we're switching away from it
+      try { await wallpaperService.deleteWallpaper(); } catch (_) {}
+    }
+
+    set({ currentWallpaper: processedUrl, wallpaperType: type });
+    await get()._save();
+  },
+
+  // Clears all wallpaper (both blob and URL types).
+  clearWallpaper: async () => {
+    const oldUrl = get().currentWallpaper;
+    if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
+    try { await wallpaperService.deleteWallpaper(); } catch (_) {}
+    set({ currentWallpaper: null, wallpaperType: null });
+    await get()._save();
   },
 
   setSearchQuery: (query) => set({ searchQuery: query }),
   setIsSearchOpen: (isOpen) => set({ isSearchOpen: isOpen, searchQuery: isOpen ? get().searchQuery : '' }),
   setIsAddWorkspaceModalOpen: (isOpen) => set({ isAddWorkspaceModalOpen: isOpen }),
+
+  setMode: async (mode) => {
+    set({ currentMode: mode });
+    await get()._save();
+  },
+
+  toggleMode: async () => {
+    const nextMode = get().currentMode === 'analytics' ? 'bookmarks' : 'analytics';
+    set({ currentMode: nextMode });
+    await get()._save();
+  },
 
   togglePrivacyMode: async () => {
     set(state => ({ isPrivacyMode: !state.isPrivacyMode }));
@@ -138,6 +255,11 @@ export const useWorkspaceStore = create((set, get) => ({
 
   updateBgStyles: async (styles) => {
     set(state => ({ ...state, ...styles }));
+    await get()._save();
+  },
+
+  setStartupAnimationEnabled: async (enabled) => {
+    set({ startupAnimationEnabled: enabled });
     await get()._save();
   },
 
@@ -461,6 +583,147 @@ export const useWorkspaceStore = create((set, get) => ({
     await get()._save();
   },
 
+  // Auto-balance cards (columns) across vertical lanes to equalize lane height
+  // without moving individual bookmarks inside cards
+  autoBalanceColumns: async (wsId) => {
+    const ws = get().workspaces.find(w => w.id === wsId);
+    if (!ws || ws.columns.length <= 1) return;
+
+    const columns = [...ws.columns];
+
+    // Find current lane structure
+    const laneMap = new Map();
+    const laneOrder = [];
+    columns.forEach(col => {
+      const lid = col.laneId || col.id;
+      if (!laneMap.has(lid)) { laneMap.set(lid, []); laneOrder.push(lid); }
+      laneMap.get(lid).push(col);
+    });
+    const currentLanes = laneOrder.length;
+    const N = columns.length;
+
+    // Maintain the user's existing horizontal lane count (columns across screen)
+    // so the board preserves its horizontal layout width instead of squishing into fewer vertical columns
+    const targetLanesCount = currentLanes > 0 ? currentLanes : Math.min(6, N);
+
+    // Calculate card height weight (number of bookmarks + 3 for header & padding overhead)
+    const getCardWeight = (col) => (col.bookmarks?.length || 0) + 3;
+
+    // Sort cards by size descending (largest cards first)
+    const sortedColumns = [...columns].sort((a, b) => getCardWeight(b) - getCardWeight(a));
+
+    // Initialize target lanes
+    const lanes = Array.from({ length: targetLanesCount }, (_, i) => ({
+      id: `lane-bal-${Date.now()}-${i}`,
+      weight: 0,
+      columns: []
+    }));
+
+    // Bin-packing: assign each card to the lane with minimum total height/weight
+    for (const col of sortedColumns) {
+      let minLane = lanes[0];
+      for (let i = 1; i < lanes.length; i++) {
+        if (lanes[i].weight < minLane.weight) {
+          minLane = lanes[i];
+        }
+      }
+      minLane.columns.push(col);
+      minLane.weight += getCardWeight(col);
+    }
+
+    // Reconstruct balanced columns array with updated laneId for each card
+    const balancedColumns = [];
+    lanes.forEach(lane => {
+      const laneId = lane.columns[0]?.id || lane.id;
+      lane.columns.forEach(col => {
+        balancedColumns.push({
+          ...col,
+          laneId: laneId
+        });
+      });
+    });
+
+    set((state) => ({
+      workspaces: state.workspaces.map(w =>
+        w.id === wsId ? { ...w, columns: balancedColumns } : w
+      )
+    }));
+    await get()._save();
+  },
+
+  // 2D Card movement: supports moving cards above/below another card in a lane,
+  // or placing cards into new lanes to the left/right of target columns
+  moveColumn: async (wsId, draggedId, targetId, position) => {
+    if (!draggedId || !targetId || draggedId === targetId) return;
+
+    set((state) => ({
+      workspaces: state.workspaces.map(ws => {
+        if (ws.id !== wsId) return ws;
+
+        const cols = ws.columns.map(c => ({
+          ...c,
+          laneId: c.laneId || c.id
+        }));
+
+        const draggedCol = cols.find(c => c.id === draggedId);
+        const targetCol = cols.find(c => c.id === targetId);
+
+        if (!draggedCol || !targetCol) return ws;
+
+        // 1. Filter out draggedCol from current list
+        const remainingCols = cols.filter(c => c.id !== draggedId);
+
+        // 2. Map existing lanes in current remainingCols order
+        const laneMap = new Map();
+        const laneOrder = [];
+        remainingCols.forEach(c => {
+          const lid = c.laneId;
+          if (!laneMap.has(lid)) {
+            laneMap.set(lid, []);
+            laneOrder.push(lid);
+          }
+          laneMap.get(lid).push(c);
+        });
+
+        const targetLaneId = targetCol.laneId;
+
+        if (position === 'above' || position === 'below') {
+          // Adopt targetCol's exact laneId
+          draggedCol.laneId = targetLaneId;
+
+          const targetIdx = remainingCols.findIndex(c => c.id === targetId);
+          if (targetIdx !== -1) {
+            const insertIdx = position === 'above' ? targetIdx : targetIdx + 1;
+            remainingCols.splice(insertIdx, 0, draggedCol);
+          } else {
+            remainingCols.push(draggedCol);
+          }
+          return { ...ws, columns: remainingCols };
+        }
+
+        if (position === 'left-lane' || position === 'right-lane') {
+          // Assign a fresh unique laneId to draggedCol
+          const newLaneId = `lane-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+          draggedCol.laneId = newLaneId;
+
+          const targetLaneIdx = laneOrder.indexOf(targetLaneId);
+          const insertLaneIdx = position === 'left-lane'
+            ? Math.max(0, targetLaneIdx !== -1 ? targetLaneIdx : 0)
+            : (targetLaneIdx !== -1 ? targetLaneIdx + 1 : laneOrder.length);
+
+          laneOrder.splice(insertLaneIdx, 0, newLaneId);
+          laneMap.set(newLaneId, [draggedCol]);
+
+          const reorderedColumns = laneOrder.flatMap(lid => laneMap.get(lid) || []);
+          return { ...ws, columns: reorderedColumns };
+        }
+
+        return ws;
+      })
+    }));
+    await get()._save();
+  },
+
   // Moves draggedId to just before targetId in the flat columns array.
   // Pass targetId=null to append to end.
   reorderColumns: async (wsId, draggedId, targetId) => {
@@ -549,6 +812,9 @@ export const useWorkspaceStore = create((set, get) => ({
 
   _save: async () => {
     const state = get();
+    const isUrlWallpaper = state.wallpaperType === 'youtube-embed' ||
+      state.wallpaperType === 'video/url' ||
+      state.wallpaperType === 'image/url';
     await storageService.saveData({
       workspaces: state.workspaces,
       activeWorkspaceId: state.activeWorkspaceId,
@@ -557,7 +823,12 @@ export const useWorkspaceStore = create((set, get) => ({
       isIncognitoMode: state.isIncognitoMode,
       bgBlur: state.bgBlur,
       bgBrightness: state.bgBrightness,
-      videoFps: state.videoFps
+      videoFps: state.videoFps,
+      startupAnimationEnabled: state.startupAnimationEnabled,
+      currentMode: state.currentMode,
+      // Persist URL-based wallpapers in storage so they survive reloads
+      wallpaperUrl: isUrlWallpaper ? state.currentWallpaper : null,
+      wallpaperType: isUrlWallpaper ? state.wallpaperType : null,
     });
   }
 }));

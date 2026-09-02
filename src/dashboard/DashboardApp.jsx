@@ -16,6 +16,10 @@ import { DuplicatesModal } from '../components/ui/DuplicatesModal'
 import { ImportExportModal } from '../components/dashboard/ImportExportModal'
 import { WidgetsLayer } from '../components/widgets/WidgetsLayer'
 import { WidgetGallery } from '../components/widgets/WidgetGallery'
+import { StartupAnimation } from '../components/ui/StartupAnimation'
+import { sessionService } from '../services/sessionService'
+import { ModeSwitcher } from '../components/ui/ModeSwitcher'
+import { AnalyticsView } from '../components/analytics/AnalyticsView'
 import { Plus, X } from 'lucide-react'
 
 // Groups flat columns array into vertical lanes by laneId
@@ -34,6 +38,8 @@ function DashboardApp() {
   const {
     workspaces,
     activeWorkspaceId,
+    currentMode,
+    toggleMode,
     initialize,
     isInitialized,
     currentWallpaper,
@@ -42,6 +48,7 @@ function DashboardApp() {
     searchQuery,
     setIsSearchOpen,
     reorderColumns,
+    moveColumn,
     reorderBookmarks,
     updateBookmark,
     removeBookmark,
@@ -65,6 +72,47 @@ function DashboardApp() {
   const [isBackupOpen, setIsBackupOpen] = useState(false);
   const [isTrashOpen, setIsTrashOpen] = useState(false);
   const [isDuplicatesOpen, setIsDuplicatesOpen] = useState(false);
+  const [showStartupAnimation, setShowStartupAnimation] = useState(false);
+  // Tracks whether the YouTube iframe failed to load / returned an error
+  const [wallpaperFailed, setWallpaperFailed] = useState(false);
+  // Native video resolution warning — shown when source is below 1920×1080
+  const [videoQualityWarning, setVideoQualityWarning] = useState(null);
+  // { w, h } | null
+
+  // Check if this tab is the start of a new browser session
+  useEffect(() => {
+    let active = true;
+    const checkSession = async () => {
+      const isFirst = await sessionService.isFirstSessionTab();
+      if (active && isFirst) {
+        const enabled = useWorkspaceStore.getState().startupAnimationEnabled ?? true;
+        if (enabled) {
+          setShowStartupAnimation(true);
+        }
+      }
+    };
+    checkSession();
+    return () => { active = false; };
+  }, []);
+
+  // Reset failure state whenever the wallpaper URL changes
+  useEffect(() => { setWallpaperFailed(false); }, [currentWallpaper]);
+
+  // Listen for YouTube player error events sent via postMessage
+  useEffect(() => {
+    const handleMessage = (e) => {
+      if (!currentWallpaper || wallpaperType !== 'youtube-embed') return;
+      try {
+        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        // YouTube player sends {event:'error', info: errorCode} via postMessage
+        if (data?.event === 'error') setWallpaperFailed(true);
+        // Also catch infoDelivery with playerError field
+        if (data?.event === 'infoDelivery' && data?.info?.playerError) setWallpaperFailed(true);
+      } catch (_) {}
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [currentWallpaper, wallpaperType]);
 
   // ── Drag-and-drop state ─────────────────────────────────────────────────────
   // dragPayload is a ref (no re-render on change) — holds what is being dragged
@@ -85,22 +133,36 @@ function DashboardApp() {
 
   useEffect(() => {
     const onKey = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); setIsSearchOpen(true); }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+      if (e.altKey && (e.key === 'a' || e.key === 'A')) {
+        e.preventDefault();
+        toggleMode();
+      }
     };
+    const handleGlobalEnd = () => clearDrag();
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [setIsSearchOpen]);
+    window.addEventListener('dragend', handleGlobalEnd);
+    window.addEventListener('drop', handleGlobalEnd);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('dragend', handleGlobalEnd);
+      window.removeEventListener('drop', handleGlobalEnd);
+    };
+  }, [setIsSearchOpen, toggleMode]);
 
   if (!isInitialized) return <div className="bg-black min-h-screen" />;
 
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0];
   if (!activeWorkspace) return null;
 
-  const filteredColumns = activeWorkspace.columns.map(col => ({
+  const filteredColumns = (activeWorkspace.columns || []).map(col => ({
     ...col,
-    bookmarks: col.bookmarks.filter(bm =>
-      bm.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bm.url.toLowerCase().includes(searchQuery.toLowerCase())
+    bookmarks: (col.bookmarks || []).filter(bm =>
+      (bm?.title || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+      (bm?.url || '').toLowerCase().includes((searchQuery || '').toLowerCase())
     )
   }));
   const lanes = buildLanes(filteredColumns);
@@ -121,6 +183,7 @@ function DashboardApp() {
           next.kind === prev.kind &&
           next.colId === prev.colId &&
           next.bmId === prev.bmId &&
+          next.position === prev.position &&
           next.side === prev.side &&
           next.half === prev.half &&
           next.idx === prev.idx) return prev;
@@ -135,25 +198,16 @@ function DashboardApp() {
     setDragKind('column');
   };
 
-  const onColumnDragOver = (colId, side) => {
+  const onColumnDragOver = (colId, position) => {
     if (dragPayload.current?.type !== 'column') return;
     if (dragPayload.current.colId === colId) { updateDropTarget(null); return; }
-    updateDropTarget({ kind: 'col', colId, side });
+    updateDropTarget({ kind: 'col', colId, position });
   };
 
-  const onColumnDrop = (targetColId, side) => {
+  const onColumnDrop = (targetColId, position) => {
     const p = dragPayload.current;
     if (!p || p.type !== 'column' || p.colId === targetColId) return clearDrag();
-
-    if (side === 'before') {
-      reorderColumns(activeWorkspaceId, p.colId, targetColId);
-    } else {
-      // Insert after targetColId: find the next column (skipping the dragged one)
-      const cols = activeWorkspace.columns;
-      const targetIdx = cols.findIndex(c => c.id === targetColId);
-      const nextCol = cols.slice(targetIdx + 1).find(c => c.id !== p.colId);
-      reorderColumns(activeWorkspaceId, p.colId, nextCol?.id ?? null);
-    }
+    moveColumn(activeWorkspaceId, p.colId, targetColId, position);
     clearDrag();
   };
 
@@ -219,7 +273,7 @@ function DashboardApp() {
   // ── Per-column DnD snapshot (computed inline, no memo needed) ────────────────
   const getColDnd = (colId) => ({
     isBeingDragged: dragKind === 'column' && dragPayload.current?.colId === colId,
-    dropSide: dropTarget?.kind === 'col' && dropTarget.colId === colId ? dropTarget.side : null,
+    dropPosition: dropTarget?.kind === 'col' && dropTarget.colId === colId ? dropTarget.position : null,
     isBodyOver: dropTarget?.kind === 'body' && dropTarget.colId === colId,
     bmDropInfo: dropTarget?.kind === 'bm' && dropTarget.colId === colId
       ? { bmId: dropTarget.bmId, half: dropTarget.half }
@@ -234,24 +288,106 @@ function DashboardApp() {
       className="relative min-h-screen text-white overflow-hidden"
       style={{ fontFamily: "'Inter', system-ui, sans-serif", '--accent-color': accentColor }}
     >
-      {/* SVG filter powering the liquid-glass refraction effect on bookmark groups */}
-      <svg aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
-        <filter id="liquid-glass-distortion" x="-20%" y="-20%" width="140%" height="140%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.018" numOctaves="2" seed="7" result="noise" />
-          <feGaussianBlur in="noise" stdDeviation="2" result="softNoise" />
-          <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="45" xChannelSelector="R" yChannelSelector="G" />
+      {/* SVG filter powering the Apple-style liquid-glass distortion on bookmark groups */}
+      <svg
+        style={{ position: 'fixed', top: 0, left: 0, width: 0, height: 0, pointerEvents: 'none', zIndex: -1 }}
+        aria-hidden="true"
+      >
+        <filter id="liquid-glass-distortion" x="-20%" y="-20%" width="140%" height="140%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.018 0.024" numOctaves="2" result="warpNoise" />
+          <feDisplacementMap in="SourceGraphic" in2="warpNoise" scale="36" xChannelSelector="R" yChannelSelector="G" />
         </filter>
       </svg>
 
-      {/* Background */}
-      {wallpaperType?.startsWith('video/') ? (
-        <video
-          autoPlay loop muted playsInline
-          className="absolute inset-0 w-full h-full object-cover scale-105"
-          style={{ filter: `brightness(${bgBrightness / 100}) blur(${bgBlur}px)`, transition: 'filter 0.6s ease' }}
-          src={currentWallpaper}
-          ref={(el) => { if (el) el.playbackRate = (videoFps || 60) / 60; }}
-        />
+      {/* Background — three branches: YouTube iframe | local/URL video | image/none */}
+      {wallpaperType === 'youtube-embed' ? (
+        <>
+          <iframe
+            key={currentWallpaper}
+            src={currentWallpaper}
+            allow="autoplay; fullscreen"
+            allowFullScreen
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            style={{
+              border: 'none',
+              transform: 'scale(1.08)',
+              transformOrigin: 'center center',
+              filter: `brightness(${bgBrightness / 100}) blur(${bgBlur}px)`,
+              transition: 'filter 0.6s ease',
+              opacity: wallpaperFailed ? 0 : 1,
+            }}
+            title="Live wallpaper"
+          />
+          {/* Error overlay — shown when YouTube blocks the embed */}
+          {wallpaperFailed && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950" style={{ zIndex: 1 }}>
+              <div className="text-center space-y-3 max-w-xs px-6">
+                <div className="text-3xl">📺</div>
+                <p className="text-white/60 text-sm font-medium">YouTube blocked this embed</p>
+                <p className="text-white/30 text-xs leading-relaxed">
+                  YouTube restricts embedding in browser extensions.<br />
+                  Try a direct <span className="text-amber-400/80">.mp4</span> link from Pexels, Pixabay, or Mixkit instead.
+                </p>
+                <button
+                  onClick={() => useWorkspaceStore.getState().clearWallpaper()}
+                  className="mt-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/60 hover:text-white text-xs font-semibold transition-all"
+                >
+                  Clear Wallpaper
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (wallpaperType?.startsWith('video/') || wallpaperType === 'video/url') ? (
+        <>
+          <video
+            autoPlay loop muted playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{
+              // Only apply filter when non-default — blur(0px) / brightness(1) still
+              // triggers a compositor rasterization pass that reduces perceived quality.
+              // Skipping it entirely lets the browser render the video natively.
+              filter: (bgBlur > 0 || bgBrightness < 100)
+                ? `brightness(${bgBrightness / 100}) blur(${bgBlur}px)`
+                : 'none',
+              transition: 'filter 0.6s ease',
+            }}
+            src={currentWallpaper}
+            ref={(el) => { if (el) el.playbackRate = (videoFps || 60) / 60; }}
+            onLoadedMetadata={(e) => {
+              const { videoWidth: w, videoHeight: h } = e.target;
+              // Warn if native resolution is below Full HD (1920×1080)
+              if (w > 0 && h > 0 && (w < 1920 || h < 1080)) {
+                setVideoQualityWarning({ w, h });
+              } else {
+                setVideoQualityWarning(null);
+              }
+            }}
+          />
+          {/* Low-quality warning toast */}
+          {videoQualityWarning && (
+            <div
+              className="absolute bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-3 rounded-2xl border border-amber-500/20 bg-black/70 backdrop-blur-xl text-xs text-white/70 shadow-2xl"
+              style={{ zIndex: 50, whiteSpace: 'nowrap' }}
+            >
+              <span className="text-amber-400">⚠</span>
+              <span>
+                Source is <span className="text-white font-semibold">{videoQualityWarning.w}&times;{videoQualityWarning.h}</span>
+                {' '}— below 1920&times;1080.
+                {currentWallpaper?.includes('mixkit.co') && (
+                  <> Try replacing <code className="text-amber-400/80 bg-white/5 px-1 rounded">-small.mp4</code> with <code className="text-amber-400/80 bg-white/5 px-1 rounded">-1080p.mp4</code> in the URL.</>  
+                )}
+              </span>
+              <button
+                onClick={() => setVideoQualityWarning(null)}
+                className="ml-1 text-white/30 hover:text-white transition-colors flex-shrink-0"
+                aria-label="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <div
           className="absolute inset-0 bg-cover bg-center scale-105"
@@ -268,51 +404,59 @@ function DashboardApp() {
       {/* Content */}
       <div className="relative z-10 flex flex-col h-screen">
 
-        {/* Workspace tabs */}
-        <header className="flex items-center gap-2 px-8 pt-6 pb-0">
-          {workspaces.map(ws => (
-            <div key={ws.id} className="relative group/tab">
-              <button
-                onClick={() => useWorkspaceStore.getState().setActiveWorkspace(ws.id)}
-                className={`flex items-center gap-1.5 pl-5 ${workspaces.length > 1 ? 'pr-8' : 'pr-5'} py-[7px] rounded-xl text-[13px] transition-all font-semibold ${
-                  ws.id === activeWorkspaceId
-                    ? 'bg-amber-400 text-black shadow-lg'
-                    : 'bg-white/[0.07] text-white/50 hover:text-white/80 hover:bg-white/[0.1]'
-                }`}
-              >
-                {ws.name}
-              </button>
-              {workspaces.length > 1 && !isLocked && (
+        {/* Workspace tabs + Mode Switcher */}
+        <header className="flex items-center justify-between px-8 pt-6 pb-0">
+          <div className="flex items-center gap-2">
+            {workspaces.map(ws => (
+              <div key={ws.id} className="relative group/tab">
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm(`Delete workspace "${ws.name}"?`)) deleteWorkspace(ws.id);
-                  }}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-md opacity-0 group-hover/tab:opacity-100 transition-opacity ${
+                  onClick={() => useWorkspaceStore.getState().setActiveWorkspace(ws.id)}
+                  className={`flex items-center gap-1.5 pl-5 ${workspaces.length > 1 ? 'pr-8' : 'pr-5'} py-[7px] rounded-xl text-[13px] transition-all font-semibold ${
                     ws.id === activeWorkspaceId
-                      ? 'hover:bg-black/10 text-black/60 hover:text-black'
-                      : 'hover:bg-white/10 text-white/40 hover:text-white'
+                      ? 'bg-amber-400 text-black shadow-lg'
+                      : 'bg-white/[0.07] text-white/50 hover:text-white/80 hover:bg-white/[0.1]'
                   }`}
                 >
-                  <X size={14} />
+                  {ws.name}
                 </button>
-              )}
-            </div>
-          ))}
-          <button
-            onClick={() => setIsAddWorkspaceModalOpen(true)}
-            className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/[0.07] text-white/40 hover:bg-white/[0.12] hover:text-white transition-all"
-          >
-            <Plus size={16} />
-          </button>
+                {workspaces.length > 1 && !isLocked && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm(`Delete workspace "${ws.name}"?`)) deleteWorkspace(ws.id);
+                    }}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-md opacity-0 group-hover/tab:opacity-100 transition-opacity ${
+                      ws.id === activeWorkspaceId
+                        ? 'hover:bg-black/10 text-black/60 hover:text-black'
+                        : 'hover:bg-white/10 text-white/40 hover:text-white'
+                    }`}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              onClick={() => setIsAddWorkspaceModalOpen(true)}
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/[0.07] text-white/40 hover:bg-white/[0.12] hover:text-white transition-all"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+
+          <ModeSwitcher />
         </header>
 
         <div className="mx-8 mt-4 mb-6 h-px bg-white/[0.12]" />
 
-        <PinnedBar workspaceId={activeWorkspaceId} columns={activeWorkspace.columns} />
+        {currentMode === 'analytics' ? (
+          <AnalyticsView />
+        ) : (
+          <>
+            <PinnedBar workspaceId={activeWorkspaceId} columns={activeWorkspace.columns} />
 
-        {/* Kanban board */}
-        <div className="flex-1 overflow-hidden">
+            {/* Kanban board */}
+            <div className="flex-1 overflow-hidden">
           <div className="h-full overflow-x-auto overflow-y-auto">
             <div className="flex items-start justify-center gap-4 px-10 pb-8 min-h-full min-w-max mx-auto">
 
@@ -345,8 +489,8 @@ function DashboardApp() {
                         dnd={getColDnd(group.id)}
                         onDragStart={() => onColumnDragStart(group.id)}
                         onDragEnd={onDragEnd}
-                        onColDragOver={(side) => onColumnDragOver(group.id, side)}
-                        onColDrop={(side) => onColumnDrop(group.id, side)}
+                        onColDragOver={(pos) => onColumnDragOver(group.id, pos)}
+                        onColDrop={(pos) => onColumnDrop(group.id, pos)}
                         onBodyDragOver={() => onColBodyDragOver(group.id)}
                         onBodyDrop={() => onColBodyDrop(group.id)}
                         onBmDragStart={onBookmarkDragStart}
@@ -381,6 +525,8 @@ function DashboardApp() {
             </div>
           </div>
         </div>
+        </>
+      )}
       </div>
 
       <UtilityRail
@@ -390,15 +536,30 @@ function DashboardApp() {
         onOpenDuplicates={() => setIsDuplicatesOpen(true)}
       />
 
-      <WidgetsLayer />
-      <WidgetGallery />
+      {currentMode !== 'analytics' && (
+        <>
+          <WidgetsLayer />
+          <WidgetGallery />
+        </>
+      )}
 
       <AddWorkspaceModal />
       <SearchOverlay />
-      <AppearanceModal isOpen={isAppearanceOpen} onClose={() => setIsAppearanceOpen(false)} />
+      <AppearanceModal
+        isOpen={isAppearanceOpen}
+        onClose={() => setIsAppearanceOpen(false)}
+        onPreviewStartupAnimation={() => setShowStartupAnimation(true)}
+      />
       <ImportExportModal isOpen={isBackupOpen} onClose={() => setIsBackupOpen(false)} />
       <TrashModal isOpen={isTrashOpen} onClose={() => setIsTrashOpen(false)} />
       <DuplicatesModal isOpen={isDuplicatesOpen} onClose={() => setIsDuplicatesOpen(false)} />
+
+      {showStartupAnimation && (
+        <StartupAnimation
+          accentColor={accentColor}
+          onComplete={() => setShowStartupAnimation(false)}
+        />
+      )}
 
       <EditBookmarkModal
         isOpen={!!editingBookmark}

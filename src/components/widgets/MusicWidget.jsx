@@ -16,7 +16,19 @@ const Equalizer = ({ playing }) => (
 );
 
 /* ── Connect screen ── */
-const ConnectScreen = ({ onConnect, isConnecting, error, clientId, onClientIdChange, onSave }) => (
+const ConnectScreen = ({ onConnect, isConnecting, error, clientId, onClientIdChange, onSave, redirectUri }) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopyRedirect = async () => {
+    try {
+      await navigator.clipboard.writeText(redirectUri);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard API unavailable — ignore, URI is still selectable as text.
+    }
+  };
+
+  return (
   <div className="music-connect-screen">
     <div className="music-brand-icon">
       <svg viewBox="0 0 168 168" fill="none">
@@ -37,6 +49,41 @@ const ConnectScreen = ({ onConnect, isConnecting, error, clientId, onClientIdCha
         onKeyDown={(e) => e.key === 'Enter' && onSave()}
       />
       <button className="music-save-btn" onClick={onSave} title="Save">✓</button>
+    </div>
+
+    <div className="music-redirect-row" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '4px', lineHeight: 1.4 }}>
+      <p style={{ margin: 0 }}>
+        In your Spotify app's dashboard, add this exact URL under <strong>Redirect URIs</strong>:
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+        <code style={{
+          flex: 1,
+          background: 'rgba(255,255,255,0.06)',
+          padding: '4px 8px',
+          borderRadius: '6px',
+          fontSize: '10px',
+          wordBreak: 'break-all',
+          userSelect: 'all'
+        }}>
+          {redirectUri}
+        </code>
+        <button
+          onClick={handleCopyRedirect}
+          title="Copy redirect URI"
+          style={{
+            flexShrink: 0,
+            background: 'rgba(255,255,255,0.08)',
+            border: 'none',
+            borderRadius: '6px',
+            color: copied ? '#1DB954' : 'rgba(255,255,255,0.7)',
+            fontSize: '10px',
+            padding: '4px 8px',
+            cursor: 'pointer'
+          }}
+        >
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
     </div>
 
     <button
@@ -73,7 +120,8 @@ const ConnectScreen = ({ onConnect, isConnecting, error, clientId, onClientIdCha
       </a>
     </p>
   </div>
-);
+  );
+};
 
 /* ── Player screen ── */
 const PlayerScreen = ({
@@ -449,35 +497,31 @@ export const MusicWidget = ({ size }) => {
     if (!lastPlayedTrack) return;
     setError(null);
     try {
-      // 1. Try to play via active device
+      // 1. Try to play via the currently active device
       await spotifyService.play({ uris: [lastPlayedTrack.uri] });
       setIsPlaying(true);
       setTimeout(fetchPlayer, 800);
-    } catch (err) {
-      // 2. No active device: open Spotify Web Player and trigger a retry poll
-      setError('Waking up Spotify session…');
-      if (typeof chrome !== 'undefined' && chrome.tabs) {
-        chrome.tabs.create({ url: 'https://open.spotify.com', active: false });
-      } else {
-        window.open('https://open.spotify.com', '_blank');
-      }
+      return;
+    } catch {
+      // No active device — fall through to device lookup below
+    }
 
-      let attempts = 0;
-      const retryId = setInterval(async () => {
-        attempts++;
-        try {
-          await spotifyService.play({ uris: [lastPlayedTrack.uri] });
-          clearInterval(retryId);
-          setError(null);
-          setIsPlaying(true);
-          setTimeout(fetchPlayer, 800);
-        } catch {
-          if (attempts >= 12) {
-            clearInterval(retryId);
-            setError('Could not wake up session. Please play manual inside the Spotify tab.');
-          }
-        }
-      }, 2000);
+    // 2. No active device: find any device Spotify already knows about
+    // (desktop app, phone, a Connect speaker) and target it directly.
+    // This never opens a tab — it just remote-controls an existing device.
+    try {
+      const data = await spotifyService.getDevices();
+      const devices = data?.devices || [];
+      if (devices.length === 0) {
+        setError('No active Spotify device found. Open Spotify on your phone, desktop app, or a Connect speaker, then try again.');
+        return;
+      }
+      const target = devices.find((d) => d.is_active) || devices[0];
+      await spotifyService.play({ uris: [lastPlayedTrack.uri] }, target.id);
+      setIsPlaying(true);
+      setTimeout(fetchPlayer, 800);
+    } catch {
+      setError('Could not start playback on any device. Open Spotify and try again.');
     }
   };
 
@@ -515,7 +559,7 @@ export const MusicWidget = ({ size }) => {
     }
   };
 
-  const handleSaveClientId = () => { saveSpotifyClientId(clientIdInput); };
+  const handleSaveClientId = () => { saveSpotifyClientId(clientIdInput.trim()); };
 
   if (!isConnected) {
     return (
@@ -526,6 +570,7 @@ export const MusicWidget = ({ size }) => {
         clientId={clientIdInput}
         onClientIdChange={setClientIdInput}
         onSave={handleSaveClientId}
+        redirectUri={spotifyService.getRedirectUri()}
       />
     );
   }

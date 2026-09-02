@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Spotify CLI token cache (contains a refresh token)
+.spotify_token_cache.json
+__pycache__/
+*.pyc

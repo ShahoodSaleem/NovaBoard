@@ -34,6 +34,28 @@ const PREVIEW_ICONS = {
       <line x1="39" y1="22" x2="39" y2="34" stroke="rgba(255,255,255,0.8)" strokeWidth="3" strokeLinecap="round"/>
     </svg>
   ),
+  budget: (
+    <svg viewBox="0 0 48 48" fill="none" className="gallery-preview-svg">
+      <circle cx="24" cy="24" r="16" stroke="rgba(255,255,255,0.06)" strokeWidth="6"/>
+      <circle cx="24" cy="24" r="16" stroke="#2563eb" strokeWidth="6" strokeDasharray="28 72" strokeDashoffset="0"/>
+      <circle cx="24" cy="24" r="16" stroke="#10b981" strokeWidth="6" strokeDasharray="22 78" strokeDashoffset="-30"/>
+      <circle cx="24" cy="24" r="16" stroke="#f97316" strokeWidth="6" strokeDasharray="18 82" strokeDashoffset="-54"/>
+      <circle cx="24" cy="24" r="16" stroke="#a855f7" strokeWidth="6" strokeDasharray="16 84" strokeDashoffset="-74"/>
+      <circle cx="24" cy="24" r="16" stroke="#f43f5e" strokeWidth="6" strokeDasharray="10 90" strokeDashoffset="-92"/>
+    </svg>
+  ),
+  usage: (
+    <svg viewBox="0 0 48 48" fill="none" className="gallery-preview-svg">
+      <rect x="8" y="10" width="32" height="4" rx="2" fill="#818cf8" opacity="0.9"/>
+      <rect x="8" y="18" width="24" height="4" rx="2" fill="#34d399" opacity="0.8"/>
+      <rect x="8" y="26" width="18" height="4" rx="2" fill="#f472b6" opacity="0.7"/>
+      <rect x="8" y="34" width="12" height="4" rx="2" fill="#fb923c" opacity="0.6"/>
+      <circle cx="42" cy="12" r="2" fill="rgba(255,255,255,0.3)"/>
+      <circle cx="34" cy="20" r="2" fill="rgba(255,255,255,0.3)"/>
+      <circle cx="28" cy="28" r="2" fill="rgba(255,255,255,0.3)"/>
+      <circle cx="22" cy="36" r="2" fill="rgba(255,255,255,0.3)"/>
+    </svg>
+  ),
 };
 
 export const WidgetGallery = () => {

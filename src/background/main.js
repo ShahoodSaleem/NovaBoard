@@ -4,6 +4,7 @@
  */
 
 const STORAGE_KEY = 'flowmarks_data';
+const USAGE_KEY = 'novaboard_usage';
 
 const DEFAULT_WORKSPACES = [
   {
@@ -31,6 +32,12 @@ const DEFAULT_WORKSPACES = [
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === 'quick-save') {
     await handleQuickSave();
+  } else if (command === 'toggle-analytics-mode') {
+    const data = await loadData();
+    if (data) {
+      data.currentMode = data.currentMode === 'analytics' ? 'bookmarks' : 'analytics';
+      await saveData(data);
+    }
   }
 });
 
@@ -201,3 +208,128 @@ async function handleQuickSave() {
     console.error('Quick Save failed:', error);
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  SITE USAGE TRACKER
+//  Tracks time spent per domain across all tabs.
+//  Data is persisted to chrome.storage.local under USAGE_KEY as:
+//    { date: 'YYYY-MM-DD', domains: { 'example.com': <ms> } }
+//  Resets automatically when the date changes.
+// ══════════════════════════════════════════════════════════════════════════════
+
+let activeTabId = null;
+let activeTabUrl = null;
+let sessionStart = null; // Timestamp when the current tab became active
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function extractDomain(url) {
+  try {
+    const u = new URL(url);
+    // Skip chrome:// / chrome-extension:// / about: / etc.
+    if (!['http:', 'https:'].includes(u.protocol)) return null;
+    return u.hostname.replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+}
+
+async function loadUsage() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([USAGE_KEY], (result) => {
+      if (chrome.runtime.lastError) { resolve(null); return; }
+      resolve(result[USAGE_KEY] || null);
+    });
+  });
+}
+
+async function saveUsage(data) {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [USAGE_KEY]: data }, () => resolve());
+  });
+}
+
+// Flush elapsed time for the currently-tracked tab into storage
+async function flushCurrentTab() {
+  if (!activeTabUrl || !sessionStart) return;
+  const domain = extractDomain(activeTabUrl);
+  if (!domain) return;
+
+  const elapsed = Date.now() - sessionStart;
+  if (elapsed < 500) return; // Ignore sub-half-second blips
+
+  const today = todayStr();
+  let raw = await loadUsage();
+
+  // Reset if it's a new day, but preserve history
+  if (!raw || raw.date !== today) {
+    const prevHistory = raw?.history || {};
+    if (raw?.date && raw?.domains) {
+      prevHistory[raw.date] = raw.domains;
+    }
+    raw = { date: today, domains: {}, history: prevHistory };
+  }
+
+  raw.domains[domain] = (raw.domains[domain] || 0) + elapsed;
+  if (!raw.history) raw.history = {};
+  raw.history[today] = raw.domains;
+
+  // Prune history older than 30 days
+  const dates = Object.keys(raw.history);
+  if (dates.length > 30) {
+    dates.sort().slice(0, dates.length - 30).forEach((d) => delete raw.history[d]);
+  }
+
+  await saveUsage(raw);
+}
+
+// Called whenever we know a new tab/URL is now "active"
+async function trackSwitch(newTabId, newUrl) {
+  // Flush time on the previous active tab
+  await flushCurrentTab();
+
+  // Start tracking the new one
+  activeTabId = newTabId;
+  activeTabUrl = newUrl;
+  sessionStart = Date.now();
+}
+
+// Listen: user switches to a different tab
+chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    await trackSwitch(tabId, tab.url || null);
+  } catch { /* tab may have been closed */ }
+});
+
+// Listen: tab navigates to a new URL (including initial load)
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (changeInfo.status !== 'complete') return;
+  if (tabId !== activeTabId) return; // Only track the currently active tab
+  // URL changed — flush old, start fresh
+  await trackSwitch(tabId, tab.url || null);
+});
+
+// Listen: tab closed — flush its time
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  if (tabId === activeTabId) {
+    await flushCurrentTab();
+    activeTabId = null;
+    activeTabUrl = null;
+    sessionStart = null;
+  }
+});
+
+// On service-worker startup, find and start tracking the current active tab
+(async () => {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (tab) {
+      activeTabId = tab.id;
+      activeTabUrl = tab.url || null;
+      sessionStart = Date.now();
+    }
+  } catch { /* ignore */ }
+})();

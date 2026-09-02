@@ -46,6 +46,20 @@ export const WIDGET_DEFS = [
     icon: '🎵',
     defaultSize: { w: 380, h: 200 },
   },
+  {
+    type: 'budget',
+    name: 'Budget Tracker',
+    description: 'Track income & expenses with a live donut chart',
+    icon: '💰',
+    defaultSize: { w: 360, h: 460 },
+  },
+  {
+    type: 'usage',
+    name: 'Site Usage',
+    description: 'See how long you spend on each website today',
+    icon: '📊',
+    defaultSize: { w: 340, h: 420 },
+  },
 ];
 
 import { create } from 'zustand';

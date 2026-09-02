@@ -5,7 +5,13 @@ import { resolve } from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './src'),
+    },
+  },
   build: {
+    outDir: 'dist-url-wallpaper',
     rollupOptions: {
       input: {
         dashboard: resolve(__dirname, 'dashboard.html'),

@@ -5,11 +5,15 @@ import { WidgetContainer } from './WidgetContainer';
 import { ClockWidget } from './ClockWidget';
 import { TaskWidget } from './TaskWidget';
 import { MusicWidget } from './MusicWidget';
+import { BudgetWidget } from './BudgetWidget';
+import { UsageWidget } from './UsageWidget';
 
 const WIDGET_MAP = {
   clock: ClockWidget,
   tasks: TaskWidget,
   music: MusicWidget,
+  budget: BudgetWidget,
+  usage: UsageWidget,
 };
 
 export const WidgetsLayer = () => {

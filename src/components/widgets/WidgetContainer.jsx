@@ -5,6 +5,8 @@ const TITLES = {
   clock: '🕐  Clock',
   tasks: '✅  Tasks',
   music: '🎵  Music',
+  budget: '💰  Budget Tracker',
+  usage: '📊  Site Usage',
 };
 
 export const WidgetContainer = ({ widget, children }) => {
@@ -70,6 +72,15 @@ export const WidgetContainer = ({ widget, children }) => {
         } else if (widget.type === 'music') {
           minW = 300;
           minH = 160;
+        } else if (widget.type === 'budget') {
+          minW = 300;
+          minH = 360;
+        } else if (widget.type === 'usage') {
+          minW = 280;
+          minH = 300;
+        } else if (widget.type === 'pie') {
+          minW = 260;
+          minH = 260;
         }
         const maxW = 900;
         const maxH = 900;
@@ -126,8 +137,7 @@ export const WidgetContainer = ({ widget, children }) => {
       {/* Drag handle / header — completely hidden for clock */}
       {!isClock && (
         <div className="wc-header" onMouseDown={onHeaderMouseDown}>
-          <span className="wc-title">{TITLES[widget.type] ?? widget.type}</span>
-          <div className="wc-controls">
+          <div className="wc-controls" style={{ marginLeft: 'auto' }}>
             <button
               className="wc-btn minimize"
               onClick={() => toggleMinimize(widget.id)}

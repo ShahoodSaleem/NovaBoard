@@ -10,7 +10,8 @@ import {
   Lock,
   Unlock,
   Trash2,
-  Copy
+  Copy,
+  Sparkles
 } from 'lucide-react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { useWidgetStore } from '../../store/useWidgetStore';
@@ -29,7 +30,8 @@ export function UtilityRail({ onOpenAppearance, onOpenBackup, onOpenTrash, onOpe
     importChromeBookmarks,
     activeWorkspaceId,
     workspaces,
-    trash
+    trash,
+    autoBalanceColumns
   } = useWorkspaceStore();
 
   const trashCount = trash.filter(t => t.workspaceId === activeWorkspaceId).length;
@@ -64,7 +66,7 @@ export function UtilityRail({ onOpenAppearance, onOpenBackup, onOpenTrash, onOpe
         <div 
           className="flex items-center gap-2 overflow-hidden"
           style={{
-            maxWidth: isCollapsed ? '0px' : '450px',
+            maxWidth: isCollapsed ? '0px' : '520px',
             opacity: isCollapsed ? 0 : 1,
             transform: isCollapsed ? 'translateX(20px)' : 'translateX(0)',
             transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -165,6 +167,19 @@ export function UtilityRail({ onOpenAppearance, onOpenBackup, onOpenTrash, onOpe
             </button>
             <span className="absolute bottom-15 left-1/2 -translate-x-1/2 opacity-0 group-hover/btn:opacity-100 transition-opacity bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none border border-white/10">
               Appearance
+            </span>
+          </div>
+
+          {/* Auto-Balance Cards */}
+          <div className="relative group/btn">
+            <button
+              onClick={() => autoBalanceColumns(activeWorkspaceId)}
+              className="p-3 rounded-xl text-white/40 hover:text-amber-400 hover:bg-amber-500/20 transition-all duration-300 active:scale-95 relative"
+            >
+              <Sparkles size={20} className="group-hover/btn:rotate-12 transition-transform duration-300" />
+            </button>
+            <span className="absolute bottom-15 left-1/2 -translate-x-1/2 opacity-0 group-hover/btn:opacity-100 transition-opacity bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none border border-white/10">
+              Auto-Balance Cards
             </span>
           </div>
 

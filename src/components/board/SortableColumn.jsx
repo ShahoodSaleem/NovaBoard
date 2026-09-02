@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { SortableBookmark } from '../bookmark/SortableBookmark';
 import { Plus, Link2, MoreHorizontal, ChevronDown, Palette, LayoutGrid, List } from 'lucide-react';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+import { LiquidGlassCard } from '../ui/LiquidGlassCard';
 
 // Preset icons shown next to the group name. `null` = no icon.
 const ICON_PRESETS = [null, '📌', '💼', '🎮', '📚', '🎨', '🛒', '🎵', '💻', '✈️', '❤️', '🔥'];
@@ -56,14 +57,25 @@ export function SortableColumn({
   // Use dragRef.current (ref, always current) instead of dragKind prop (state, may lag 1 frame)
   const getDragType = () => dragRef?.current?.type ?? null;
 
+  // Calculate 2D drop target region (above/below in same lane, or left-lane/right-lane for new column)
+  const calculatePosition = (e) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return 'below';
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (x < rect.width * 0.18) return 'left-lane';
+    if (x > rect.width * 0.82) return 'right-lane';
+    if (y < rect.height * 0.5) return 'above';
+    return 'below';
+  };
+
   const handleDragOver = (e) => {
     e.preventDefault();
     const type = getDragType();
     if (type === 'column') {
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const side = e.clientX < rect.left + rect.width / 2 ? 'before' : 'after';
-      onColDragOver(side);
+      const pos = calculatePosition(e);
+      onColDragOver(pos);
     } else if (type === 'bookmark') {
       // Fires only when no bookmark intercepted the event (bookmark dragover stops propagation)
       onBodyDragOver();
@@ -74,21 +86,26 @@ export function SortableColumn({
     e.preventDefault();
     const type = getDragType();
     if (type === 'column') {
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const side = e.clientX < rect.left + rect.width / 2 ? 'before' : 'after';
-      onColDrop(side);
+      const pos = calculatePosition(e);
+      onColDrop(pos);
     } else if (type === 'bookmark') {
       onBodyDrop();
     }
   };
 
-  // Left/right side indicator during column drag
-  const sideIndicatorStyle = dnd.dropSide
-    ? dnd.dropSide === 'before'
-      ? { boxShadow: '-3px 0 0 0 #f59e0b', borderRadius: '16px' }
-      : { boxShadow: '3px 0 0 0 #f59e0b', borderRadius: '16px' }
-    : {};
+  // Drop position visual indicator during column drag (above, below, left-lane, right-lane)
+  let dropIndicatorStyle = {};
+  if (dnd.dropPosition) {
+    if (dnd.dropPosition === 'above') {
+      dropIndicatorStyle = { boxShadow: '0 -4px 0 0 #f59e0b', borderRadius: '16px' };
+    } else if (dnd.dropPosition === 'below') {
+      dropIndicatorStyle = { boxShadow: '0 4px 0 0 #f59e0b', borderRadius: '16px' };
+    } else if (dnd.dropPosition === 'left-lane') {
+      dropIndicatorStyle = { boxShadow: '-4px 0 0 0 #f59e0b', borderRadius: '16px' };
+    } else if (dnd.dropPosition === 'right-lane') {
+      dropIndicatorStyle = { boxShadow: '4px 0 0 0 #f59e0b', borderRadius: '16px' };
+    }
+  }
 
   return (
     <div
@@ -99,22 +116,17 @@ export function SortableColumn({
         transform: dnd.isBeingDragged ? 'scale(0.96)' : 'scale(1)',
         filter: dnd.isBeingDragged ? 'blur(1px)' : 'none',
         transition: 'opacity 0.15s, transform 0.15s, filter 0.15s',
-        ...sideIndicatorStyle,
+        ...dropIndicatorStyle,
       }}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      {/* Board card */}
-      <div
-        className={`flex flex-col glass-group rounded-2xl overflow-hidden ${
-          dnd.isBodyOver ? 'glass-group-drop-active' : ''
-        }`}
-        style={column.glareColor ? { '--glare-color': hexToRgba(column.glareColor, 0.35) } : undefined}
-        onMouseMove={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          e.currentTarget.style.setProperty('--mx', `${((e.clientX - rect.left) / rect.width) * 100}%`);
-          e.currentTarget.style.setProperty('--my', `${((e.clientY - rect.top) / rect.height) * 100}%`);
-        }}
+      {/* Board card: Apple-Style Liquid Glass Container with Slot-Based Architecture */}
+      <LiquidGlassCard
+        className="flex flex-col"
+        filterId={`liquid-filter-${column.id}`}
+        isDropActive={dnd.isBodyOver}
+        glareColor={column.glareColor ? hexToRgba(column.glareColor, 0.35) : null}
       >
 
         {/* Header */}
@@ -320,7 +332,7 @@ export function SortableColumn({
             </div>
           </div>
         </div>
-      </div>
+      </LiquidGlassCard>
 
       {/* Add group below in same lane */}
       <button
