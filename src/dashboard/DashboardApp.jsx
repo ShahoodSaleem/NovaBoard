@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useMemo } from 'react'
 import { useWorkspaceStore } from '../store/useWorkspaceStore'
 import { useWidgetStore } from '../store/useWidgetStore'
 import SearchOverlay from '../components/ui/SearchOverlay'
@@ -21,6 +21,7 @@ import { sessionService } from '../services/sessionService'
 import { ModeSwitcher } from '../components/ui/ModeSwitcher'
 import { AnalyticsView } from '../components/analytics/AnalyticsView'
 import { Plus, X } from 'lucide-react'
+import { computeReorderedColumns } from '../utils/columnLayout'
 
 // Groups flat columns array into vertical lanes by laneId
 function buildLanes(columns) {
@@ -47,6 +48,7 @@ function DashboardApp() {
     setIsAddWorkspaceModalOpen,
     searchQuery,
     setIsSearchOpen,
+    updateWorkspaceColumns,
     reorderColumns,
     moveColumn,
     reorderBookmarks,
@@ -124,12 +126,27 @@ function DashboardApp() {
 
   // dropTarget drives all visual feedback (borders, lines, highlights)
   const [dropTarget, setDropTarget] = useState(null);
-  // { kind: 'col',   colId, side: 'before'|'after' }
-  // { kind: 'bm',    bmId, colId, half: 'top'|'bottom' }
-  // { kind: 'body',  colId }
-  // { kind: 'lane',  idx: number }
 
-  useEffect(() => { initialize() }, [initialize])
+  // ── Remade Pointer-based Card Drag Coordinator with Live Layout Preview ──────
+  const [activeDragColId, setActiveDragColId] = useState(null);
+  const [previewMove, setPreviewMove] = useState(null); // { draggedId, targetId, position: 'above'|'below'|'left'|'right' }
+  const [floatingPos, setFloatingPos] = useState(null); // { x, y }
+
+  const dragStartRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const previewMoveRef = useRef(null);
+  previewMoveRef.current = previewMove;
+
+  // ── DnD helpers ─────────────────────────────────────────────────────────────
+  // IMPORTANT: clearDrag must be declared BEFORE the useEffect that references it
+  // to avoid a Temporal Dead Zone (TDZ) ReferenceError in the minified build.
+  const clearDrag = () => {
+    dragPayload.current = null;
+    setDragKind(null);
+    setDropTarget(null);
+  };
+
+  useEffect(() => { initialize() }, [initialize]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -153,29 +170,150 @@ function DashboardApp() {
     };
   }, [setIsSearchOpen, toggleMode]);
 
-  if (!isInitialized) return <div className="bg-black min-h-screen" />;
-
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || workspaces[0];
-  if (!activeWorkspace) return null;
 
-  const filteredColumns = (activeWorkspace.columns || []).map(col => ({
-    ...col,
-    bookmarks: (col.bookmarks || []).filter(bm =>
-      (bm?.title || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
-      (bm?.url || '').toLowerCase().includes((searchQuery || '').toLowerCase())
-    )
-  }));
-  const lanes = buildLanes(filteredColumns);
+  const filteredColumns = useMemo(() => {
+    if (!activeWorkspace) return [];
+    return (activeWorkspace.columns || []).map(col => ({
+      ...col,
+      bookmarks: (col.bookmarks || []).filter(bm =>
+        (bm?.title || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+        (bm?.url || '').toLowerCase().includes((searchQuery || '').toLowerCase())
+      )
+    }));
+  }, [activeWorkspace, searchQuery]);
 
-  // ── DnD helpers ─────────────────────────────────────────────────────────────
+  // Live temporary layout preview while card is brought near drop position
+  const displayedColumns = useMemo(() => {
+    if (!previewMove) return filteredColumns;
+    return computeReorderedColumns(
+      filteredColumns,
+      previewMove.draggedId,
+      previewMove.targetId,
+      previewMove.position
+    );
+  }, [filteredColumns, previewMove]);
 
-  const clearDrag = () => {
-    dragPayload.current = null;
-    setDragKind(null);
-    setDropTarget(null);
+  const lanes = useMemo(() => buildLanes(displayedColumns), [displayedColumns]);
+
+  const onStartCardDrag = (colId, e) => {
+    dragStartRef.current = { colId, x: e.clientX, y: e.clientY };
+    isDraggingRef.current = false;
+    setActiveDragColId(colId);
+
+    const onPointerMove = (moveEvent) => {
+      if (!dragStartRef.current) return;
+      const dx = moveEvent.clientX - dragStartRef.current.x;
+      const dy = moveEvent.clientY - dragStartRef.current.y;
+
+      if (!isDraggingRef.current) {
+        if (Math.hypot(dx, dy) < 4) return;
+        isDraggingRef.current = true;
+      }
+
+      setFloatingPos({ x: moveEvent.clientX, y: moveEvent.clientY });
+
+      // Hit test target columns using [data-col-id]
+      const colEls = Array.from(document.querySelectorAll('[data-col-id]'));
+      let bestHit = null;
+
+      for (const el of colEls) {
+        const targetId = el.getAttribute('data-col-id');
+        if (targetId === dragStartRef.current.colId) continue;
+
+        const rect = el.getBoundingClientRect();
+        // Generous margin around cards to catch gaps smoothly
+        if (
+          moveEvent.clientX >= rect.left - 18 &&
+          moveEvent.clientX <= rect.right + 18 &&
+          moveEvent.clientY >= rect.top - 18 &&
+          moveEvent.clientY <= rect.bottom + 18
+        ) {
+          const relX = moveEvent.clientX - rect.left;
+          const relY = moveEvent.clientY - rect.top;
+          const w = rect.width;
+          const h = rect.height;
+
+          let pos = 'below';
+          if (relY < h * 0.25) {
+            pos = 'above';
+          } else if (relY > h * 0.75) {
+            pos = 'below';
+          } else if (relX < w * 0.5) {
+            pos = 'left';
+          } else {
+            pos = 'right';
+          }
+
+          bestHit = { targetId, position: pos };
+          break;
+        }
+      }
+
+      if (bestHit) {
+        setPreviewMove(prev => {
+          if (
+            prev &&
+            prev.draggedId === dragStartRef.current.colId &&
+            prev.targetId === bestHit.targetId &&
+            prev.position === bestHit.position
+          ) {
+            return prev;
+          }
+          return {
+            draggedId: dragStartRef.current.colId,
+            targetId: bestHit.targetId,
+            position: bestHit.position,
+          };
+        });
+      } else {
+        // If moved outside any column card, clear preview so layout reverts to prior state
+        setPreviewMove(null);
+      }
+    };
+
+    const onPointerUp = () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('keydown', onKeyDown);
+
+      if (isDraggingRef.current && previewMoveRef.current) {
+        const pm = previewMoveRef.current;
+        const finalColumns = computeReorderedColumns(
+          filteredColumns,
+          pm.draggedId,
+          pm.targetId,
+          pm.position
+        );
+        updateWorkspaceColumns(activeWorkspaceId, finalColumns);
+      }
+
+      isDraggingRef.current = false;
+      dragStartRef.current = null;
+      setActiveDragColId(null);
+      setPreviewMove(null);
+      setFloatingPos(null);
+    };
+
+    const onKeyDown = (keyEvent) => {
+      if (keyEvent.key === 'Escape') {
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('keydown', onKeyDown);
+        isDraggingRef.current = false;
+        dragStartRef.current = null;
+        setActiveDragColId(null);
+        setPreviewMove(null);
+        setFloatingPos(null);
+      }
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('keydown', onKeyDown);
   };
 
-  // Deduplicated setDropTarget — avoids pointless re-renders when nothing changed
+  // Deduplicated setDropTarget for bookmark drag
   const updateDropTarget = (next) => {
     setDropTarget(prev => {
       if (!next && !prev) return prev;
@@ -191,8 +329,9 @@ function DashboardApp() {
     });
   };
 
-  // ── Column drag ──────────────────────────────────────────────────────────────
-
+  /* =========================================================================
+   * [COMMENTED OUT PREVIOUS HTML5 COLUMN DRAG HANDLERS AS REQUESTED]
+   *
   const onColumnDragStart = (colId) => {
     dragPayload.current = { type: 'column', colId };
     setDragKind('column');
@@ -210,6 +349,19 @@ function DashboardApp() {
     moveColumn(activeWorkspaceId, p.colId, targetColId, position);
     clearDrag();
   };
+
+  const onLaneGapDragOver = (laneIdx) => {
+    if (dragPayload.current?.type !== 'column') return;
+    updateDropTarget({ kind: 'lane', idx: laneIdx });
+  };
+
+  const onLaneGapDrop = (laneIdx) => {
+    const p = dragPayload.current;
+    if (!p || p.type !== 'column') return clearDrag();
+    moveGroupToNewLane(activeWorkspaceId, p.colId, laneIdx);
+    clearDrag();
+  };
+   * ========================================================================= */
 
   // ── Bookmark drag ─────────────────────────────────────────────────────────────
 
@@ -254,20 +406,6 @@ function DashboardApp() {
     clearDrag();
   };
 
-  // ── Lane-gap drag ─────────────────────────────────────────────────────────────
-
-  const onLaneGapDragOver = (laneIdx) => {
-    if (dragPayload.current?.type !== 'column') return;
-    updateDropTarget({ kind: 'lane', idx: laneIdx });
-  };
-
-  const onLaneGapDrop = (laneIdx) => {
-    const p = dragPayload.current;
-    if (!p || p.type !== 'column') return clearDrag();
-    moveGroupToNewLane(activeWorkspaceId, p.colId, laneIdx);
-    clearDrag();
-  };
-
   const onDragEnd = () => clearDrag();
 
   // ── Per-column DnD snapshot (computed inline, no memo needed) ────────────────
@@ -280,6 +418,9 @@ function DashboardApp() {
       : null,
     bmBeingDraggedId: dragKind === 'bookmark' ? dragPayload.current?.bmId : null,
   });
+
+  if (!isInitialized) return <div className="bg-black min-h-screen" />;
+  if (!activeWorkspace) return null;
 
   const accentColor = activeWorkspace?.theme?.accentColor || '#ef4444';
 
@@ -460,7 +601,9 @@ function DashboardApp() {
           <div className="h-full overflow-x-auto overflow-y-auto">
             <div className="flex items-start justify-center gap-4 px-10 pb-8 min-h-full min-w-max mx-auto">
 
-              {/* Lane gap BEFORE first lane (only during column drag) */}
+              {/* =========================================================================
+               * [COMMENTED OUT PREVIOUS EmptyLaneDropZone AS REQUESTED]
+               *
               {dragKind === 'column' && lanes.length < 6 && (
                 <EmptyLaneDropZone
                   isOver={dropTarget?.kind === 'lane' && dropTarget.idx === 0}
@@ -468,52 +611,43 @@ function DashboardApp() {
                   onDrop={() => onLaneGapDrop(0)}
                 />
               )}
+               * ========================================================================= */}
 
-              {lanes.map((lane, laneIdx) => (
-                <React.Fragment key={lane.id}>
-                  <div className="flex flex-col gap-0 w-[280px] shrink-0">
-                    {lane.groups.map(group => (
-                      <SortableColumn
-                        key={group.id}
-                        column={group}
-                        workspaceId={activeWorkspaceId}
-                        isLocked={isLocked}
-                        onEditBookmark={setEditingBookmark}
-                        onDeleteBookmark={(bmId) => removeBookmark(activeWorkspaceId, group.id, bmId)}
-                        onAddBookmark={() => setAddingToColumn(group)}
-                        onDeleteColumn={() => setDeletingColumn(group)}
-                        onAddGroupToLane={() => addGroupToLane(activeWorkspaceId, group.id)}
-                        // DnD — dragRef is the mutable ref (always current, no stale-state issues)
-                        dragRef={dragPayload}
-                        dragKind={dragKind}
-                        dnd={getColDnd(group.id)}
-                        onDragStart={() => onColumnDragStart(group.id)}
-                        onDragEnd={onDragEnd}
-                        onColDragOver={(pos) => onColumnDragOver(group.id, pos)}
-                        onColDrop={(pos) => onColumnDrop(group.id, pos)}
-                        onBodyDragOver={() => onColBodyDragOver(group.id)}
-                        onBodyDrop={() => onColBodyDrop(group.id)}
-                        onBmDragStart={onBookmarkDragStart}
-                        onBmDragEnd={onDragEnd}
-                        onBmDragOver={onBookmarkDragOver}
-                        onBmDrop={onBookmarkDrop}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Lane gap AFTER each lane (only during column drag) */}
-                  {dragKind === 'column' && lanes.length < 6 && (
-                    <EmptyLaneDropZone
-                      isOver={dropTarget?.kind === 'lane' && dropTarget.idx === laneIdx + 1}
-                      onDragOver={() => onLaneGapDragOver(laneIdx + 1)}
-                      onDrop={() => onLaneGapDrop(laneIdx + 1)}
+              {lanes.map((lane) => (
+                <div key={lane.id} className="flex flex-col gap-0 w-[280px] shrink-0 transition-all duration-200">
+                  {lane.groups.map(group => (
+                    <SortableColumn
+                      key={group.id}
+                      column={group}
+                      workspaceId={activeWorkspaceId}
+                      isLocked={isLocked}
+                      onEditBookmark={setEditingBookmark}
+                      onDeleteBookmark={(bmId) => removeBookmark(activeWorkspaceId, group.id, bmId)}
+                      onAddBookmark={() => setAddingToColumn(group)}
+                      onDeleteColumn={() => setDeletingColumn(group)}
+                      onAddGroupToLane={() => addGroupToLane(activeWorkspaceId, group.id)}
+                      // Bookmark DnD
+                      dragRef={dragPayload}
+                      dragKind={dragKind}
+                      dnd={getColDnd(group.id)}
+                      onDragEnd={onDragEnd}
+                      onBodyDragOver={() => onColBodyDragOver(group.id)}
+                      onBodyDrop={() => onColBodyDrop(group.id)}
+                      onBmDragStart={onBookmarkDragStart}
+                      onBmDragEnd={onDragEnd}
+                      onBmDragOver={onBookmarkDragOver}
+                      onBmDrop={onBookmarkDrop}
+                      // Remade Pointer Card Moving
+                      onStartCardDrag={onStartCardDrag}
+                      isCardDragging={activeDragColId === group.id}
+                      isPreviewPlaceholder={previewMove?.draggedId === group.id}
                     />
-                  )}
-                </React.Fragment>
+                  ))}
+                </div>
               ))}
 
-              {/* ADD BOARD — only visible when not dragging a column */}
-              {dragKind !== 'column' && lanes.length < 6 && (
+              {/* ADD BOARD */}
+              {lanes.length < 6 && (
                 <div
                   onClick={() => addColumn(activeWorkspaceId)}
                   className="w-[280px] shrink-0 h-[52px] border-2 border-dashed border-amber-500/0 hover:border-amber-500/55 rounded-2xl flex items-center justify-center cursor-pointer gap-2 text-amber-500/0 hover:text-amber-400 hover:bg-amber-500/5 text-[11px] font-bold tracking-widest uppercase self-start opacity-0 hover:opacity-100 transition-all duration-300"
@@ -528,6 +662,25 @@ function DashboardApp() {
         </>
       )}
       </div>
+
+      {/* Floating Drag Preview Following Pointer */}
+      {activeDragColId && floatingPos && isDraggingRef.current && (
+        <div
+          className="fixed pointer-events-none z-[9999] px-4 py-2 rounded-xl border border-amber-400/60 bg-black/90 backdrop-blur-xl shadow-[0_15px_35px_rgba(0,0,0,0.7),0_0_25px_rgba(245,158,11,0.35)] flex items-center gap-2.5 text-white text-[13px] font-semibold tracking-wide"
+          style={{
+            left: floatingPos.x + 14,
+            top: floatingPos.y + 14,
+          }}
+        >
+          <div className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b] animate-ping" />
+          <span>{filteredColumns.find(c => c.id === activeDragColId)?.name || 'Moving Group'}</span>
+          {previewMove && (
+            <span className="text-amber-400 text-[11px] uppercase tracking-wider font-bold bg-amber-400/15 px-2 py-0.5 rounded-full border border-amber-400/30">
+              {previewMove.position}
+            </span>
+          )}
+        </div>
+      )}
 
       <UtilityRail
         onOpenAppearance={() => setIsAppearanceOpen(true)}

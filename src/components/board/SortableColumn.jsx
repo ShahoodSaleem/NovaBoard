@@ -29,14 +29,18 @@ const hexToRgba = (hex, alpha) => {
 export function SortableColumn({
   column, workspaceId, isLocked = false,
   onEditBookmark, onDeleteBookmark, onAddBookmark, onDeleteColumn, onAddGroupToLane,
-  // DnD from DashboardApp
-  dragRef,   // mutable ref — always holds current drag type without stale-state lag
-  dragKind,  // state — used only for render decisions (lane zones, opacity)
+  // Bookmark DnD
+  dragRef,
+  dragKind,
   dnd,
   onDragStart, onDragEnd,
   onColDragOver, onColDrop,
   onBodyDragOver, onBodyDrop,
   onBmDragStart, onBmDragEnd, onBmDragOver, onBmDrop,
+  // Remade Pointer-based Card Moving
+  onStartCardDrag,
+  isCardDragging = false,
+  isPreviewPlaceholder = false,
 }) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState(column.name);
@@ -55,8 +59,9 @@ export function SortableColumn({
   };
 
   // Use dragRef.current (ref, always current) instead of dragKind prop (state, may lag 1 frame)
-  const getDragType = () => dragRef?.current?.type ?? null;
-
+  /* =========================================================================
+   * [COMMENTED OUT PREVIOUS HTML5 COLUMN DRAG LOGIC AS REQUESTED]
+   *
   // Calculate 2D drop target region (above/below in same lane, or left-lane/right-lane for new column)
   const calculatePosition = (e) => {
     const rect = containerRef.current?.getBoundingClientRect();
@@ -64,8 +69,8 @@ export function SortableColumn({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (x < rect.width * 0.18) return 'left-lane';
-    if (x > rect.width * 0.82) return 'right-lane';
+    if (x < rect.width * 0.22) return 'left-lane';
+    if (x > rect.width * 0.78) return 'right-lane';
     if (y < rect.height * 0.5) return 'above';
     return 'below';
   };
@@ -77,7 +82,6 @@ export function SortableColumn({
       const pos = calculatePosition(e);
       onColDragOver(pos);
     } else if (type === 'bookmark') {
-      // Fires only when no bookmark intercepted the event (bookmark dragover stops propagation)
       onBodyDragOver();
     }
   };
@@ -92,40 +96,43 @@ export function SortableColumn({
       onBodyDrop();
     }
   };
+   * ========================================================================= */
 
-  // Drop position visual indicator during column drag (above, below, left-lane, right-lane)
-  let dropIndicatorStyle = {};
-  if (dnd.dropPosition) {
-    if (dnd.dropPosition === 'above') {
-      dropIndicatorStyle = { boxShadow: '0 -4px 0 0 #f59e0b', borderRadius: '16px' };
-    } else if (dnd.dropPosition === 'below') {
-      dropIndicatorStyle = { boxShadow: '0 4px 0 0 #f59e0b', borderRadius: '16px' };
-    } else if (dnd.dropPosition === 'left-lane') {
-      dropIndicatorStyle = { boxShadow: '-4px 0 0 0 #f59e0b', borderRadius: '16px' };
-    } else if (dnd.dropPosition === 'right-lane') {
-      dropIndicatorStyle = { boxShadow: '4px 0 0 0 #f59e0b', borderRadius: '16px' };
+  // Bookmark DnD over the column body
+  const handleBookmarkDragOver = (e) => {
+    if (dragRef?.current?.type === 'bookmark') {
+      e.preventDefault();
+      onBodyDragOver?.();
     }
-  }
+  };
+
+  const handleBookmarkDrop = (e) => {
+    if (dragRef?.current?.type === 'bookmark') {
+      e.preventDefault();
+      onBodyDrop?.();
+    }
+  };
 
   return (
     <div
       ref={containerRef}
-      className="flex flex-col w-[280px] shrink-0 group/col"
+      data-col-id={column.id}
+      className={`flex flex-col w-[280px] shrink-0 group/col transition-all duration-200 ease-out ${
+        isPreviewPlaceholder ? 'scale-[0.98] ring-2 ring-amber-400/80 rounded-2xl shadow-[0_0_25px_rgba(245,158,11,0.25)]' : ''
+      }`}
       style={{
-        opacity: dnd.isBeingDragged ? 0.3 : 1,
-        transform: dnd.isBeingDragged ? 'scale(0.96)' : 'scale(1)',
-        filter: dnd.isBeingDragged ? 'blur(1px)' : 'none',
-        transition: 'opacity 0.15s, transform 0.15s, filter 0.15s',
-        ...dropIndicatorStyle,
+        opacity: isCardDragging ? 0.35 : (dnd?.isBeingDragged ? 0.3 : 1),
+        transform: isCardDragging ? 'scale(0.96)' : (dnd?.isBeingDragged ? 'scale(0.96)' : 'scale(1)'),
+        filter: isCardDragging ? 'blur(1px)' : 'none',
       }}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
+      onDragOver={handleBookmarkDragOver}
+      onDrop={handleBookmarkDrop}
     >
       {/* Board card: Apple-Style Liquid Glass Container with Slot-Based Architecture */}
       <LiquidGlassCard
         className="flex flex-col"
         filterId={`liquid-filter-${column.id}`}
-        isDropActive={dnd.isBodyOver}
+        isDropActive={dnd?.isBodyOver}
         glareColor={column.glareColor ? hexToRgba(column.glareColor, 0.35) : null}
       >
 
@@ -133,26 +140,16 @@ export function SortableColumn({
         <div className="px-4 pt-4 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1 min-w-0">
 
-            {/* Drag handle — initiates column drag */}
+            {/* Drag handle — initiates column moving via pointer events */}
             <div
-              draggable={!isLocked}
-              onDragStart={isLocked ? undefined : (e) => {
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', column.id);
-                // Custom ghost: just a small label so the full column doesn't fly around
-                const ghost = document.createElement('div');
-                ghost.textContent = column.name;
-                ghost.style.cssText = 'position:absolute;top:-9999px;color:#fff;padding:7px 14px;border-radius:9999px;font-size:12px;font-weight:600;font-family:system-ui;white-space:nowrap;background:linear-gradient(165deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 60%), rgba(30,30,34,0.6);border:1px solid rgba(255,255,255,0.35);box-shadow:inset 0 1px 0 rgba(255,255,255,0.4), 0 12px 30px -8px rgba(0,0,0,0.6)';
-                document.body.appendChild(ghost);
-                e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
-                requestAnimationFrame(() => document.body.removeChild(ghost));
-                onDragStart();
+              onPointerDown={(e) => {
+                if (e.button !== 0 || isLocked) return;
+                onStartCardDrag?.(column.id, e);
               }}
-              onDragEnd={isLocked ? undefined : onDragEnd}
-              title={isLocked ? 'Layout is locked' : undefined}
-              className={`transition-colors flex-shrink-0 ${
-                isLocked ? 'cursor-default text-white/5' : 'cursor-grab active:cursor-grabbing text-white/15 hover:text-white/40'
+              className={`cursor-grab active:cursor-grabbing text-white/40 hover:text-white/80 transition-colors flex-shrink-0 p-1 rounded-md hover:bg-white/10 ${
+                isLocked ? 'pointer-events-none opacity-20' : ''
               }`}
+              title="Drag to move group"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
                 <circle cx="4" cy="4" r="1.5"/><circle cx="10" cy="4" r="1.5"/>
@@ -171,8 +168,15 @@ export function SortableColumn({
               />
             ) : (
               <h2
-                onClick={() => setIsEditingName(true)}
-                className="text-[13px] font-bold text-white/90 truncate cursor-text hover:text-white transition-colors tracking-wide flex items-center gap-1.5 min-w-0"
+                onPointerDown={(e) => {
+                  if (e.button !== 0 || isLocked) return;
+                  onStartCardDrag?.(column.id, e);
+                }}
+                onDoubleClick={() => setIsEditingName(true)}
+                className={`text-[13px] font-bold text-white/90 truncate tracking-wide flex items-center gap-1.5 min-w-0 select-none ${
+                  isLocked ? 'cursor-default' : 'cursor-grab active:cursor-grabbing hover:text-white'
+                }`}
+                title="Drag to move group, double-click to rename"
               >
                 {column.icon && <span className="text-sm flex-shrink-0">{column.icon}</span>}
                 <span className="truncate">{column.name}</span>

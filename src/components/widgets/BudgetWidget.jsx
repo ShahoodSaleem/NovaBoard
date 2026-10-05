@@ -160,13 +160,19 @@ export const BudgetWidget = ({ size }) => {
     setEditingIncome(false);
   };
 
-  const widgetW = size?.w || 320;
-  const widgetH = size?.h || 440;
-  const isNarrow = widgetW < 280;
+  // Resolution/size-dependent widget sizing (commented out to prevent position shifting across monitors/resolutions)
+  // const widgetW = size?.w || 320;
+  // const widgetH = size?.h || 440;
+  // const isNarrow = widgetW < 280;
 
-  // Pie sizing
-  const R = Math.max(60, Math.min(95, Math.min(widgetW, widgetH) * 0.24));
-  const r = Math.round(R * 0.62);
+  // Pie sizing based on changing resolutions (commented out as requested):
+  // const R = Math.max(60, Math.min(95, Math.min(widgetW, widgetH) * 0.24));
+  // const r = Math.round(R * 0.62);
+
+  // Fixed stable dimensions:
+  const isNarrow = false;
+  const R = 75;
+  const r = 46;
 
   return (
     <div className="budget-v2-root">
@@ -347,7 +353,7 @@ export const BudgetWidget = ({ size }) => {
                     onClick={(e) => { e.stopPropagation(); handleDeleteExpense(exp.id); }}
                     title="Delete"
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                   </button>
                 </div>
               </div>
@@ -384,7 +390,7 @@ export const BudgetWidget = ({ size }) => {
           className="budget-v2-add-btn"
           title="Add expense"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
         </button>
       </form>
 

@@ -651,6 +651,9 @@ export const useWorkspaceStore = create((set, get) => ({
     await get()._save();
   },
 
+  /* =========================================================================
+   * [COMMENTED OUT PREVIOUS MOVING FUNCTIONALITY AS REQUESTED]
+   *
   // 2D Card movement: supports moving cards above/below another card in a lane,
   // or placing cards into new lanes to the left/right of target columns
   moveColumn: async (wsId, draggedId, targetId, position) => {
@@ -743,6 +746,17 @@ export const useWorkspaceStore = create((set, get) => ({
         }
         return { ...ws, columns: cols };
       })
+    }));
+    await get()._save();
+  },
+   * ========================================================================= */
+
+  // ── Remade Column Reordering (Clean & Direct) ──────────────────────────────
+  updateWorkspaceColumns: async (wsId, newColumns) => {
+    set((state) => ({
+      workspaces: state.workspaces.map(ws =>
+        ws.id === wsId ? { ...ws, columns: newColumns } : ws
+      )
     }));
     await get()._save();
   },
